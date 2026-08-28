@@ -21,8 +21,12 @@ import { AdminDashboard } from './pages/admin/AdminDashboard';
 import { AdminUsers } from './pages/admin/AdminUsers';
 import { AdminPredictions } from './pages/admin/AdminPredictions';
 
-// Layout wrapper for User Pages
+// Layout wrapper for User Pages (Terkunci jika Admin sedang login)
 const UserLayout = ({ children }) => {
+  const { user } = useAuth();
+  if (user?.role === 'admin') {
+    return <Navigate to="/admin/users" replace />;
+  }
   return (
     <div className="flex flex-col min-h-screen">
       <Navbar />
@@ -51,12 +55,9 @@ function App() {
             path="/predict" 
             element={
               <ProtectedRoute allowedRoles={['user', 'admin']}>
-                <div className="flex flex-col min-h-screen">
-                  <Navbar />
-                  <main className="flex-1 flex flex-col justify-center">
-                    <Predict />
-                  </main>
-                </div>
+                <UserLayout>
+                  <Predict />
+                </UserLayout>
               </ProtectedRoute>
             } 
           />

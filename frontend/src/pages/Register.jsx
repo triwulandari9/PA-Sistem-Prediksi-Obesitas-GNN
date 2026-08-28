@@ -6,8 +6,15 @@ import { AlertCircle } from 'lucide-react';
 import bgImage from '../assets/bg.png';
 
 export const Register = () => {
-  const { register } = useAuth();
+  const { user, register } = useAuth();
   const navigate = useNavigate();
+
+  // Jika sudah login sebagai Admin, kunci di panel admin
+  React.useEffect(() => {
+    if (user?.role === 'admin') {
+      navigate('/admin/users', { replace: true });
+    }
+  }, [user, navigate]);
 
   const [formData, setFormData] = useState({
     username: '',

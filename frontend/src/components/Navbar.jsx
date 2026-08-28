@@ -68,7 +68,7 @@ export const Navbar = () => {
                   : 'text-emerald-50 hover:text-white'
               }`}
             >
-              {isAdmin ? "Panel Admin" : "Login Admin"}
+              Login Admin
             </Link>
 
             {/* Notification Bell & User Menu */}
@@ -141,7 +141,7 @@ export const Navbar = () => {
             }`}
           >
             <Shield className="w-4 h-4 text-emerald-100" />
-            <span>{isAdmin ? "Panel Admin" : "Login Admin"}</span>
+            <span>Login Admin</span>
           </Link>
 
           {isAuthenticated && (
