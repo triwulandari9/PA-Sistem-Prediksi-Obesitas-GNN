@@ -35,7 +35,7 @@ export const AdminLayout = () => {
                 <Logo className="w-8 h-8 sm:w-10 sm:h-10" />
               </div>
               <span className="font-extrabold text-sm sm:text-base tracking-wide text-white">
-                PANEL ADMIN
+                LOGIN ADMIN
               </span>
             </div>
 
