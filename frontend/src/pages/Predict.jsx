@@ -168,7 +168,12 @@ export const Predict = () => {
 
     try {
       // 1. Panggil Flask REST API
-      const res = await axios.post(`${API_BASE_URL}/api/predict`, payload, { timeout: 15000 });
+      const res = await axios.post(`${API_BASE_URL}/api/predict`, payload, { 
+        timeout: 15000,
+        headers: {
+          'Bypass-Tunnel-Reminder': 'true'
+        }
+      });
 
       if (res.data.error) {
         throw new Error(res.data.error);
