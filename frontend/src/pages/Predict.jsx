@@ -6,7 +6,7 @@ import { supabase, isSupabaseConfigured, localDb } from '../lib/supabase';
 import { CustomSelect } from '../components/CustomSelect';
 import { X, AlertCircle } from 'lucide-react';
 
-const API_BASE_URL = import.meta.env.VITE_API_BASE_URL || 'http://127.0.0.1:8000';
+const API_BASE_URL = import.meta.env.VITE_API_BASE_URL || '';
 
 // Semua kolom mulai dalam keadaan KOSONG / BELUM TERPILIH
 const initialFormState = {
@@ -210,7 +210,13 @@ export const Predict = () => {
 
     } catch (err) {
       console.error('Error in predict:', err);
-      setError(err.response?.data?.error || err.message || 'Gagal memproses prediksi.');
+      if (err.code === 'ECONNABORTED' || err.message?.includes('timeout')) {
+        setError('Koneksi ke backend Flask timeout (15 detik). Pastikan server backend Flask aktif di http://127.0.0.1:8000.');
+      } else if (err.code === 'ERR_NETWORK' || !err.response) {
+        setError('Tidak dapat terhubung ke server backend Flask (http://127.0.0.1:8000). Pastikan backend Flask sudah dijalankan.');
+      } else {
+        setError(err.response?.data?.error || err.message || 'Gagal memproses prediksi.');
+      }
     } finally {
       setLoading(false);
     }
