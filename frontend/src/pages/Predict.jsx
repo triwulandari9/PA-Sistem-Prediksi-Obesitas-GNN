@@ -171,7 +171,7 @@ export const Predict = () => {
       const res = await axios.post(`${API_BASE_URL}/api/predict`, payload, { 
         timeout: 15000,
         headers: {
-          'Bypass-Tunnel-Reminder': 'true'
+          'Content-Type': 'application/json'
         }
       });
 
@@ -211,9 +211,9 @@ export const Predict = () => {
     } catch (err) {
       console.error('Error in predict:', err);
       if (err.code === 'ECONNABORTED' || err.message?.includes('timeout')) {
-        setError('Koneksi ke backend Flask timeout (15 detik). Pastikan server backend Flask aktif di http://127.0.0.1:8000.');
+        setError('Koneksi ke backend Flask timeout (15 detik). Silakan coba beberapa saat lagi.');
       } else if (err.code === 'ERR_NETWORK' || !err.response) {
-        setError('Tidak dapat terhubung ke server backend Flask (http://127.0.0.1:8000). Pastikan backend Flask sudah dijalankan.');
+        setError('Tidak dapat terhubung ke server backend AI. Pastikan VITE_API_BASE_URL sudah terpasang dan aplikasi telah di-redeploy.');
       } else {
         setError(err.response?.data?.error || err.message || 'Gagal memproses prediksi.');
       }
