@@ -1,52 +1,9 @@
 import os
 import sys
+import json
 import numpy as np
-import pandas as pd
-import torch
-import torch.nn as nn
-import torch.nn.functional as F
-from torch_geometric.nn import SAGEConv
-import joblib
 from flask import Flask, request, jsonify
 from flask_cors import CORS
-
-# --- MODEL DEFINITION (GraphSAGE 4-Layer Synchronized with Notebook) ---
-class GraphSAGE(nn.Module):
-    def __init__(self, input_dim=14, hidden_dim=192, output_dim=3, dropout=0.159):
-        super(GraphSAGE, self).__init__()
-        self.conv1 = SAGEConv(input_dim, hidden_dim)
-        self.bn1   = nn.BatchNorm1d(hidden_dim)
-        self.conv2 = SAGEConv(hidden_dim, hidden_dim)
-        self.bn2   = nn.BatchNorm1d(hidden_dim)
-        self.conv3 = SAGEConv(hidden_dim, hidden_dim // 2)
-        self.bn3   = nn.BatchNorm1d(hidden_dim // 2)
-        self.conv4 = SAGEConv(hidden_dim // 2, output_dim)
-        self.dropout = dropout
-
-    def forward(self, x, edge_index):
-        x = self.conv1(x, edge_index)
-        x = self.bn1(x)
-        x = F.elu(x)
-        x = F.dropout(x, p=self.dropout, training=self.training)
-
-        x = self.conv2(x, edge_index)
-        x = self.bn2(x)
-        x = F.elu(x)
-        x = F.dropout(x, p=self.dropout, training=self.training)
-
-        x = self.conv3(x, edge_index)
-        x = self.bn3(x)
-        x = F.elu(x)
-        x = F.dropout(x, p=self.dropout, training=self.training)
-
-        x = self.conv4(x, edge_index)
-        return x
-
-    def get_embeddings(self, x, edge_index):
-        x = self.conv1(x, edge_index); x = self.bn1(x); x = F.elu(x)
-        x = self.conv2(x, edge_index); x = self.bn2(x); x = F.elu(x)
-        x = self.conv3(x, edge_index); x = self.bn3(x); x = F.elu(x)
-        return x
 
 # --- APP INITIALIZATION ---
 app = Flask(__name__)
@@ -54,53 +11,70 @@ CORS(app, resources={r"/*": {"origins": "*"}})
 
 BASE_DIR = os.path.dirname(os.path.abspath(__file__))
 
-# Load Best Artifacts
-model = None
-scaler = None
-label_encoder = None
-best_params = {}
+# Load GNN Weights & Scaler from Lightweight Package
+pkg_path = os.path.join(BASE_DIR, 'gnn_package.json')
+weights = {}
+scaler_center = None
+scaler_scale = None
 classes = ['Rendah', 'Sedang', 'Tinggi']
-
-try:
-    params_path = os.path.join(BASE_DIR, 'best_params.pkl')
-    if os.path.exists(params_path):
-        best_params = joblib.load(params_path)
-    
-    hidden_dim = best_params.get('hidden_dim', 192)
-    dropout_val = best_params.get('dropout', 0.159)
-    
-    model = GraphSAGE(input_dim=14, hidden_dim=hidden_dim, output_dim=3, dropout=dropout_val)
-    
-    model_path = os.path.join(BASE_DIR, 'model_gnn_best.pth')
-    if not os.path.exists(model_path):
-        model_path = os.path.join(BASE_DIR, 'model_gnn.pth')
-        
-    state_dict = torch.load(model_path, map_location=torch.device('cpu'))
-    model.load_state_dict(state_dict)
-    model.eval()
-    print(f"[*] GraphSAGE Model successfully loaded from {model_path}")
-
-    scaler_path = os.path.join(BASE_DIR, 'scaler_best.pkl')
-    if not os.path.exists(scaler_path):
-        scaler_path = os.path.join(BASE_DIR, 'scaler.pkl')
-    scaler = joblib.load(scaler_path)
-    print(f"[*] Scaler loaded from {scaler_path}")
-
-    le_path = os.path.join(BASE_DIR, 'label_encoder_best.pkl')
-    if os.path.exists(le_path):
-        label_encoder = joblib.load(le_path)
-        classes = list(label_encoder.classes_)
-    print(f"[*] Classes: {classes}")
-
-except Exception as e:
-    print(f"[!] Error loading model artifacts: {e}", file=sys.stderr)
-
-# Feature Names in exact order required by Scaler
 FEATURE_NAMES = [
     'age', 'gender', 'alcohol', 'high_calorie_food', 'vegetable_consumption',
     'meal_per_day', 'calorie_monitoring', 'smoking', 'water_intake',
     'family_history', 'physical_activity', 'screen_time', 'snacking', 'transport'
 ]
+
+try:
+    with open(pkg_path, 'r', encoding='utf-8') as f:
+        pkg = json.load(f)
+    
+    weights = {k: np.array(v, dtype=np.float32) for k, v in pkg['weights'].items()}
+    scaler_center = np.array(pkg['scaler']['center'], dtype=np.float32)
+    scaler_scale = np.array(pkg['scaler']['scale'], dtype=np.float32)
+    classes = pkg.get('classes', classes)
+    print(f"[*] Lightweight GNN Engine loaded successfully from {pkg_path}")
+    print(f"[*] Classes: {classes}")
+except Exception as e:
+    print(f"[!] Error loading gnn_package.json: {e}", file=sys.stderr)
+
+def numpy_sage_layer(x, conv_name, bn_name=None, use_elu=True):
+    W_l = weights[f'{conv_name}.lin_l.weight']
+    W_r = weights[f'{conv_name}.lin_r.weight']
+    bias = weights[f'{conv_name}.lin_l.bias']
+    
+    # Combined linear transformation (SAGEConv with self-loop)
+    out = x @ (W_l.T + W_r.T) + bias
+    
+    # BatchNorm1d (eval mode using running stats)
+    if bn_name is not None:
+        gamma = weights[f'{bn_name}.weight']
+        beta = weights[f'{bn_name}.bias']
+        mean = weights[f'{bn_name}.running_mean']
+        var = weights[f'{bn_name}.running_var']
+        eps = 1e-5
+        out = (out - mean) / np.sqrt(var + eps) * gamma + beta
+    
+    # ELU activation
+    if use_elu:
+        out = np.where(out > 0, out, np.exp(out) - 1.0)
+        
+    return out
+
+def numpy_gnn_predict(raw_features_array):
+    # 1. RobustScaler transform
+    x_scaled = (raw_features_array - scaler_center) / scaler_scale
+    
+    # 2. GraphSAGE 4-Layer Forward Pass
+    x = numpy_sage_layer(x_scaled, 'conv1', 'bn1', use_elu=True)
+    x = numpy_sage_layer(x, 'conv2', 'bn2', use_elu=True)
+    x = numpy_sage_layer(x, 'conv3', 'bn3', use_elu=True)
+    logits = numpy_sage_layer(x, 'conv4', bn_name=None, use_elu=False)
+    
+    # 3. Softmax Probabilities
+    exp_logits = np.exp(logits - np.max(logits))
+    probs = exp_logits / np.sum(exp_logits)
+    pred_idx = int(np.argmax(probs))
+    
+    return pred_idx, probs
 
 def generate_recommendations(data, risk_level):
     recommendations = []
@@ -146,7 +120,8 @@ def generate_recommendations(data, risk_level):
 def health_check():
     return jsonify({
         "status": "healthy",
-        "model_loaded": model is not None,
+        "model_loaded": bool(weights),
+        "engine": "Lightweight NumPy GraphSAGE Engine",
         "features": FEATURE_NAMES,
         "classes": classes
     })
@@ -158,7 +133,7 @@ def predict():
         if not req_data:
             return jsonify({"error": "Payload JSON tidak ditemukan"}), 400
 
-        # Normalisasi key mapping (Mendukung nama deskriptif maupun singkatan dataset)
+        # Normalisasi key mapping
         gender = float(req_data.get('gender', req_data.get('Gender', 0)))
         age = float(req_data.get('age', req_data.get('Age', 25)))
         family_history = float(req_data.get('family_history', req_data.get('family_history_with_overweight', 0)))
@@ -174,7 +149,10 @@ def predict():
         alcohol = float(req_data.get('alcohol', req_data.get('calc', req_data.get('CALC', 0))))
         transport = float(req_data.get('transport', req_data.get('mtrans', req_data.get('MTRANS', 3))))
 
-        # Bentuk dictionary fitur sesuai urutan StandardScaler/RobustScaler
+        # Validasi range Age
+        if age <= 0 or age > 120:
+            return jsonify({"error": "Nilai usia (Age) harus berada di rentang 1 - 120 tahun."}), 400
+
         features_dict = {
             "age": age,
             "gender": gender,
@@ -192,22 +170,15 @@ def predict():
             "transport": transport
         }
 
-        # Validasi range Age
-        if age <= 0 or age > 120:
-            return jsonify({"error": "Nilai usia (Age) harus berada di rentang 1 - 120 tahun."}), 400
+        # Urutan array fitur yang tepat sesuai Scaler
+        raw_feat_array = np.array([
+            age, gender, alcohol, high_calorie_food, vegetable_consumption,
+            meal_per_day, calorie_monitoring, smoking, water_intake,
+            family_history, physical_activity, screen_time, snacking, transport
+        ], dtype=np.float32)
 
-        df_input = pd.DataFrame([features_dict])
-        feat_scaled = scaler.transform(df_input)
-
-        # Inisialisasi representasi Graph untuk GraphSAGE Inductive Inference
-        # Node tunggal pengguna dengan Self-Loop agar layer SAGEConv mengaktifkan neighbor weights (W2)
-        x_tensor = torch.tensor(feat_scaled, dtype=torch.float32)
-        edge_index = torch.tensor([[0], [0]], dtype=torch.long)
-
-        with torch.no_grad():
-            output = model(x_tensor, edge_index)
-            probs = F.softmax(output, dim=1).numpy()[0]
-            pred_idx = int(np.argmax(probs))
+        # Prediksi menggunakan Lightweight GNN Engine
+        pred_idx, probs = numpy_gnn_predict(raw_feat_array)
 
         label_name = classes[pred_idx] if pred_idx < len(classes) else "Sedang"
         
