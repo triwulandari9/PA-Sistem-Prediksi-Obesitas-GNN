@@ -1,13 +1,13 @@
 import React from 'react';
 import { AlertTriangle, X } from 'lucide-react';
 
-export const ConfirmModal = ({ 
-  isOpen, 
-  title = "Konfirmasi Hapus Data", 
-  message = "Apakah Anda yakin ingin menghapus data ini? Tindakan ini tidak dapat dibatalkan.", 
+export const ConfirmModal = ({
+  isOpen,
+  title = "Konfirmasi Hapus Data",
+  message = "Apakah Anda yakin ingin menghapus data ini? Tindakan ini tidak dapat dibatalkan.",
   confirmText = "Hapus Data",
   confirmColor = "bg-rose-600 hover:bg-rose-700",
-  onConfirm, 
+  onConfirm,
   onClose,
   loading = false
 }) => {
@@ -16,7 +16,7 @@ export const ConfirmModal = ({
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-900/60 backdrop-blur-sm fade-in">
       <div className="bg-white rounded-2xl max-w-md w-full p-6 shadow-2xl border border-slate-100 transform transition-all">
-        
+
         <div className="flex items-center justify-between pb-3 border-b border-slate-100">
           <div className="flex items-center space-x-3 text-rose-600">
             <div className="p-2 bg-rose-100 rounded-xl">
@@ -24,7 +24,7 @@ export const ConfirmModal = ({
             </div>
             <h3 className="text-base font-bold text-slate-900">{title}</h3>
           </div>
-          <button 
+          <button
             onClick={onClose}
             disabled={loading}
             className="text-slate-400 hover:text-slate-600 p-1 rounded-lg hover:bg-slate-100 transition-colors"
