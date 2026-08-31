@@ -200,12 +200,12 @@ def predict():
         feat_scaled = scaler.transform(df_input)
 
         # Inisialisasi representasi Graph untuk GraphSAGE Inductive Inference
-        # Node tunggal pengguna
+        # Node tunggal pengguna dengan Self-Loop agar layer SAGEConv mengaktifkan neighbor weights (W2)
         x_tensor = torch.tensor(feat_scaled, dtype=torch.float32)
-        edge_empty = torch.empty((2, 0), dtype=torch.long)
+        edge_index = torch.tensor([[0], [0]], dtype=torch.long)
 
         with torch.no_grad():
-            output = model(x_tensor, edge_empty)
+            output = model(x_tensor, edge_index)
             probs = F.softmax(output, dim=1).numpy()[0]
             pred_idx = int(np.argmax(probs))
 

@@ -1,0 +1,1154 @@
+
+=== CELL 0 ===
+import torch
+import pandas as pd
+import numpy as np
+
+def format_pytorch_version(version):
+  return version.split('+')[0]
+
+TORCH_VERSION = format_pytorch_version(torch.__version__)
+CUDA_VERSION = 'cu' + torch.version.cuda.replace('.', '') if torch.cuda.is_available() else 'cpu'
+
+print(f"Installing torch_geometric and its dependencies for PyTorch {TORCH_VERSION} and CUDA {CUDA_VERSION}...")
+!pip install -q torch-scatter -f https://data.pyg.org/whl/torch-{TORCH_VERSION}+{CUDA_VERSION}.html
+!pip install -q torch-sparse -f https://data.pyg.org/whl/torch-{TORCH_VERSION}+{CUDA_VERSION}.html
+!pip install -q torch_geometric
+print("Installation complete.")
+
+from sklearn.preprocessing import LabelEncoder, StandardScaler
+from sklearn.model_selection import train_test_split
+from sklearn.metrics import classification_report, confusion_matrix, accuracy_score
+
+from imblearn.over_sampling import SMOTE
+
+from sklearn.neighbors import kneighbors_graph
+import torch.nn.functional as F
+from torch_geometric.nn import SAGEConv
+
+import matplotlib.pyplot as plt
+import seaborn as sns
+
+=== CELL 3 ===
+df.rename(columns={
+    'Gender': 'gender',
+    'Age': 'age',
+    'family_history_with_overweight': 'family_history',
+    'FAVC': 'high_calorie_food',
+    'FCVC': 'vegetable_consumption',
+    'NCP': 'meal_per_day',
+    'CAEC': 'snacking',
+    'SMOKE': 'smoking',
+    'CH2O': 'water_intake',
+    'SCC': 'calorie_monitoring',
+    'FAF': 'physical_activity',
+    'TUE': 'screen_time',
+    'CALC': 'alcohol',
+    'MTRANS': 'transport',
+    'NObeyesdad': 'label'
+}, inplace=True)
+df.sample(5)
+
+=== CELL 16 ===
+df_encoded = df.drop(columns=['label']).copy()
+le = LabelEncoder()
+
+for col in df_encoded.select_dtypes(include=['object']).columns:
+    df_encoded[col] = le.fit_transform(df_encoded[col])
+
+plt.figure(figsize=(15, 10))
+corr_matrix = df_encoded.corr()
+
+sns.heatmap(corr_matrix, annot=True, fmt='.2f', cmap='Blues', square=True, linewidths=0.5)
+plt.title('Heatmap Korelasi Seluruh Variabel', fontsize=14)
+plt.show()
+
+=== CELL 26 ===
+import pandas as pd
+from sklearn.preprocessing import LabelEncoder
+
+=== CELL 30 ===
+le = LabelEncoder()
+for col in X.select_dtypes(include=['object']).columns:
+    X[col] = le.fit_transform(X[col])
+
+=== CELL 31 ===
+import pandas as pd
+from sklearn.preprocessing import LabelEncoder
+
+le_label = LabelEncoder()
+le_label.fit(['Rendah', 'Sedang', 'Tinggi'])
+y_encoded = y.copy()
+
+print('Mapping Label:')
+for i, cls in enumerate(le_label.classes_):
+    print(f'  {i} -> {cls}')
+
+print(f'\nShape X: {X.shape}')
+print(f'Shape y_encoded: {y_encoded.shape}')
+print(f'Distribusi kelas sebelum SMOTE:\n{pd.Series(y_encoded).value_counts().sort_index()}')
+
+=== CELL 33 ===
+from imblearn.over_sampling import SMOTE
+from sklearn.preprocessing import RobustScaler, LabelEncoder
+from sklearn.model_selection import train_test_split
+import pandas as pd
+import numpy as np
+
+np.random.seed(42)
+
+# ============================================================
+# STEP 1: AUGMENTASI DATA
+# Tambah variasi data sintetis sebelum SMOTE
+# Gaussian noise pada kolom numerik, kategorik tetap
+# ============================================================
+print('=' * 65)
+print('STEP 1: AUGMENTASI DATA')
+print('=' * 65)
+
+# Kolom numerik dan kategorik
+num_cols = ['age', 'veggie_freq', 'main_meals', 'water_intake',
+            'phys_activity', 'tech_time']
+cat_cols  = ['gender', 'alcohol', 'high_caloric_food', 'monitor_calories',
+             'snacking', 'smoke', 'water_intake', 'family_history', 'transport']
+
+# Pakai X (sudah di-encode di cell sebelumnya) dan y (risk_level string)
+X_aug_base = X.copy()
+y_aug_base = df['risk_level'].copy().reset_index(drop=True)
+
+# Cek nama kolom numerik yang ada di X
+num_cols_exist = [c for c in num_cols if c in X_aug_base.columns]
+print(f'Kolom numerik yang diaugmentasi: {num_cols_exist}')
+print(f'Data awal: {len(X_aug_base)} baris')
+print(f'Distribusi kelas awal:')
+print(y_aug_base.value_counts())
+
+N_AUG_PER_CLASS = 2000   # tambah 2000 per kelas → total ~7700 baris
+
+X_list = [X_aug_base]
+y_list = [y_aug_base]
+
+for kelas in ['Rendah', 'Sedang', 'Tinggi']:
+    mask     = y_aug_base == kelas
+    idx_k    = np.where(mask)[0]
+    idx_samp = np.random.choice(idx_k, N_AUG_PER_CLASS, replace=True)
+
+    X_new    = X_aug_base.iloc[idx_samp].copy().reset_index(drop=True)
+    y_new    = pd.Series([kelas] * N_AUG_PER_CLASS)
+
+    # Gaussian noise kecil HANYA pada numerik
+    if num_cols_exist:
+        noise = np.random.normal(0, 0.08, (N_AUG_PER_CLASS, len(num_cols_exist)))
+        X_new[num_cols_exist] = (X_new[num_cols_exist].values + noise).clip(min=0)
+
+    X_list.append(X_new)
+    y_list.append(y_new)
+
+X_augmented = pd.concat(X_list, ignore_index=True)
+y_augmented = pd.concat(y_list, ignore_index=True)
+
+print(f'\nData setelah augmentasi: {len(X_augmented)} baris')
+print(f'Distribusi kelas setelah augmentasi:')
+print(y_augmented.value_counts())
+
+# ============================================================
+# STEP 2: ENCODING LABEL 3 KELAS
+# ============================================================
+print('\n' + '=' * 65)
+print('STEP 2: ENCODING LABEL 3 KELAS')
+print('=' * 65)
+
+le_3 = LabelEncoder()
+le_3.fit(['Rendah', 'Sedang', 'Tinggi'])
+y_encoded = le_3.transform(y_augmented)
+
+print('Mapping label:')
+for i, cls in enumerate(le_3.classes_):
+    print(f'  {i} = {cls}')
+
+# ============================================================
+# STEP 3: SCALING
+# ============================================================
+print('\n' + '=' * 65)
+print('STEP 3: SCALING (RobustScaler)')
+print('=' * 65)
+
+scaler    = RobustScaler()
+X_scaled  = pd.DataFrame(
+    scaler.fit_transform(X_augmented),
+    columns=X_augmented.columns
+)
+print('RobustScaler diterapkan pada semua fitur. OK!')
+
+# ============================================================
+# STEP 4: SMOTE — sekali, pada seluruh data
+# (sesuai arahan dosen pembimbing)
+# ============================================================
+print('\n' + '=' * 65)
+print('STEP 4: SMOTE — Penyeimbangan Final (seluruh data)')
+print('=' * 65)
+
+smote = SMOTE(random_state=42, k_neighbors=5)
+X_smote, y_smote = smote.fit_resample(X_scaled, y_encoded)
+
+X_smote = pd.DataFrame(X_smote, columns=X_scaled.columns)
+y_smote = pd.Series(y_smote, name='risk_level')
+
+print(f'Data sebelum SMOTE : {len(X_scaled)}')
+print(f'Data setelah SMOTE : {len(X_smote)}')
+print('Distribusi 3 kelas setelah SMOTE:')
+for i, lbl in enumerate(le_3.classes_):
+    print(f'  {i} ({lbl}): {(y_smote == i).sum()}')
+
+# ============================================================
+# STEP 5: SPLIT 80/20
+# ============================================================
+print('\n' + '=' * 65)
+print('STEP 5: TRAIN-TEST SPLIT 80/20')
+print('=' * 65)
+
+X_train, X_test, y_train, y_test = train_test_split(
+    X_smote, y_smote,
+    test_size=0.2, random_state=42, stratify=y_smote
+)
+
+X_train = X_train.reset_index(drop=True)
+X_test  = X_test.reset_index(drop=True)
+y_train = y_train.reset_index(drop=True)
+y_test  = y_test.reset_index(drop=True)
+
+print(f'Data Training : {len(X_train)}')
+print(f'Data Testing  : {len(X_test)}')
+print('\nDistribusi Training:')
+print(pd.Series(y_train).value_counts().sort_index())
+print('\nDistribusi Testing:')
+print(pd.Series(y_test).value_counts().sort_index())
+
+X_train_smote = X_train
+y_train_smote = y_train
+
+df_final = X_smote.copy()
+df_final['risk_level'] = y_smote.values
+
+
+=== CELL 36 ===
+import torch
+from sklearn.neighbors import NearestNeighbors
+
+try:
+    import torch_geometric
+except ImportError:
+    import subprocess
+    subprocess.run(['pip', 'install', 'torch_geometric'], check=True)
+
+from torch_geometric.data import Data
+
+def build_knn_graph(features, k=5):
+    knn = NearestNeighbors(n_neighbors=k+1, metric='cosine')
+    knn.fit(features)
+    distances, indices = knn.kneighbors(features)
+
+    edge_list = []
+    for i in range(len(features)):
+        for j in indices[i][1:]:
+            edge_list.append([i, j])
+            edge_list.append([j, i])
+
+    edge_index = torch.tensor(edge_list, dtype=torch.long).t().contiguous()
+    edge_index = torch.unique(edge_index, dim=1)
+    return edge_index, knn
+
+K_NEIGHBORS = 5
+
+edge_index_train, knn_model = build_knn_graph(
+    X_train_smote.values, k=K_NEIGHBORS)
+
+train_data = Data(
+    x=torch.tensor(X_train_smote.values, dtype=torch.float),
+    edge_index=edge_index_train,
+    y=torch.tensor(y_train_smote.values, dtype=torch.long)
+)
+
+print('KNN Graph (K=5, cosine) berhasil dibuat!')
+print(f'Jumlah Node Training : {train_data.num_nodes}')
+print(f'Jumlah Edges         : {train_data.num_edges}')
+print(f'Feature per Node     : {train_data.num_features}')
+
+
+=== CELL 37 ===
+import torch
+import torch.nn as nn
+import torch.nn.functional as F
+from torch_geometric.nn import SAGEConv
+
+class GraphSAGE(torch.nn.Module):
+    def __init__(self, input_dim, hidden_dim, output_dim, dropout):
+        super(GraphSAGE, self).__init__()
+        self.conv1 = SAGEConv(input_dim, hidden_dim)
+        self.bn1   = torch.nn.BatchNorm1d(hidden_dim)
+        self.conv2 = SAGEConv(hidden_dim, hidden_dim)
+        self.bn2   = torch.nn.BatchNorm1d(hidden_dim)
+        self.conv3 = SAGEConv(hidden_dim, hidden_dim // 2)
+        self.bn3   = torch.nn.BatchNorm1d(hidden_dim // 2)
+        self.conv4 = SAGEConv(hidden_dim // 2, output_dim)
+        self.dropout = dropout
+
+    def forward(self, x, edge_index):
+        x = self.conv1(x, edge_index)
+        x = self.bn1(x)
+        x = F.elu(x)
+        x = F.dropout(x, p=self.dropout, training=self.training)
+
+        x = self.conv2(x, edge_index)
+        x = self.bn2(x)
+        x = F.elu(x)
+        x = F.dropout(x, p=self.dropout, training=self.training)
+
+        x = self.conv3(x, edge_index)
+        x = self.bn3(x)
+        x = F.elu(x)
+        x = F.dropout(x, p=self.dropout, training=self.training)
+
+        x = self.conv4(x, edge_index)
+        return x
+
+    def get_embeddings(self, x, edge_index):
+        x = self.conv1(x, edge_index); x = self.bn1(x); x = F.elu(x)
+        x = self.conv2(x, edge_index); x = self.bn2(x); x = F.elu(x)
+        x = self.conv3(x, edge_index); x = self.bn3(x); x = F.elu(x)
+        return x
+
+# 4 layer | hidden=128 | ELU | BatchNorm | dropout=0.3
+model = GraphSAGE(
+    input_dim  = X_train_smote.shape[1],
+    hidden_dim = 128,
+    output_dim = 3,
+    dropout    = 0.3
+)
+
+optimizer = torch.optim.Adam(model.parameters(), lr=0.001, weight_decay=0.0005)
+criterion = torch.nn.CrossEntropyLoss()
+scheduler = torch.optim.lr_scheduler.ReduceLROnPlateau(
+    optimizer, mode='min', factor=0.5, patience=40)
+
+print('Model GraphSAGE (4 Layer, Hidden=128, ELU, BN, Dropout=0.3)')
+print(model)
+print(f'\nTotal parameters: {sum(p.numel() for p in model.parameters()):,}')
+print(f'Input features  : {X_train_smote.shape[1]}')
+print(f'Output classes  : 3 (Rendah, Sedang, Tinggi)')
+
+
+=== CELL 39 ===
+import torch
+from torch_geometric.data import Data
+
+X_train_tensor = torch.tensor(X_train_smote.values, dtype=torch.float32)
+y_train_tensor = torch.tensor(y_train_smote.values, dtype=torch.long)
+X_test_tensor  = torch.tensor(X_test.values,        dtype=torch.float32)
+y_test_tensor  = torch.tensor(y_test.values,        dtype=torch.long)
+
+train_data = Data(
+    x=X_train_tensor,
+    edge_index=edge_index_train,
+    y=y_train_tensor
+)
+
+print('PyTorch Geometric Data siap!')
+print(f'Node training  : {train_data.num_nodes:,}')
+print(f'Edges training : {train_data.num_edges:,}')
+print(f'Node testing   : {len(X_test):,}')
+print(f'Features/node  : {train_data.num_features}')
+print(f'Classes        : {torch.unique(train_data.y).tolist()} (0=Rendah,1=Sedang,2=Tinggi)')
+
+
+=== CELL 40 ===
+import random, numpy as np, torch
+
+SEED = 42
+random.seed(SEED)
+np.random.seed(SEED)
+torch.manual_seed(SEED)
+if torch.cuda.is_available():
+    torch.cuda.manual_seed_all(SEED)
+torch.backends.cudnn.deterministic = True
+torch.backends.cudnn.benchmark     = False
+
+# Reinisialisasi model dengan seed terkunci agar bobot awal reproducible
+model = GraphSAGE(
+    input_dim  = X_train_smote.shape[1],
+    hidden_dim = 128,
+    output_dim = 3,
+    dropout    = 0.3
+)
+optimizer = torch.optim.Adam(model.parameters(), lr=0.001, weight_decay=0.0005)
+scheduler = torch.optim.lr_scheduler.ReduceLROnPlateau(
+    optimizer, mode='min', factor=0.5, patience=40)
+criterion = torch.nn.CrossEntropyLoss()
+
+print(f'Seed {SEED} dikunci. Model di-reinisialisasi.')
+print(f'Total parameters: {sum(p.numel() for p in model.parameters()):,}')
+
+
+=== CELL 41 ===
+import copy, torch, matplotlib.pyplot as plt
+
+LEARNING_RATE = 0.001
+EPOCHS        = 1000
+PATIENCE      = 100
+
+optimizer = torch.optim.Adam(
+    model.parameters(), lr=LEARNING_RATE, weight_decay=0.0005)
+criterion = torch.nn.CrossEntropyLoss()
+scheduler = torch.optim.lr_scheduler.ReduceLROnPlateau(
+    optimizer, mode='min', factor=0.5, patience=40)
+
+train_losses, train_accuracies = [], []
+best_loss        = float('inf')
+best_accuracy    = 0.0
+patience_counter = 0
+best_model_state = None
+
+print('Memulai training GraphSAGE...')
+print('=' * 65)
+
+for epoch in range(EPOCHS):
+    model.train()
+    optimizer.zero_grad()
+
+    out  = model(train_data.x, train_data.edge_index)
+    loss = criterion(out, train_data.y)
+    loss.backward()
+    torch.nn.utils.clip_grad_norm_(model.parameters(), max_norm=1.0)
+    optimizer.step()
+
+    loss_val = loss.item()
+    scheduler.step(loss_val)
+
+    _, predicted = torch.max(out, 1)
+    accuracy = (predicted == train_data.y).sum().item() / len(train_data.y)
+
+    train_losses.append(loss_val)
+    train_accuracies.append(accuracy)
+
+    # Early stopping berbasis LOSS
+    if loss_val < best_loss - 1e-5:
+        best_loss        = loss_val
+        best_accuracy    = accuracy
+        patience_counter = 0
+        best_model_state = copy.deepcopy(model.state_dict())
+    else:
+        patience_counter += 1
+
+    if patience_counter >= PATIENCE:
+        print(f'\nEarly stopping di epoch {epoch+1}')
+        break
+
+    if (epoch + 1) % 50 == 0:
+        lr = optimizer.param_groups[0]['lr']
+        print(f'Epoch [{epoch+1:4d}/{EPOCHS}] | '
+              f'Loss: {loss_val:.4f} | '
+              f'Acc: {accuracy*100:.2f}% | '
+              f'LR: {lr:.6f}')
+
+if best_model_state is not None:
+    model.load_state_dict(best_model_state)
+
+print('\n' + '=' * 65)
+print('TRAINING SELESAI')
+print('=' * 65)
+print(f'Best Training Loss     : {best_loss:.4f}')
+print(f'Best Training Accuracy : {best_accuracy*100:.2f}%')
+
+fig, axes = plt.subplots(1, 2, figsize=(14, 5))
+
+axes[0].plot(train_losses, linewidth=2, color='steelblue')
+axes[0].set_title('Training Loss')
+axes[0].set_xlabel('Epoch'); axes[0].set_ylabel('Loss')
+axes[0].grid(True, linestyle='--', alpha=0.6)
+
+axes[1].plot([a*100 for a in train_accuracies], linewidth=2, color='darkorange')
+axes[1].axhline(y=95, color='red',  linestyle='--', label='Target 95%')
+axes[1].axhline(y=99, color='green',linestyle='--', label='Target 99%')
+axes[1].set_title('Training Accuracy')
+axes[1].set_xlabel('Epoch'); axes[1].set_ylabel('Accuracy (%)')
+axes[1].legend()
+axes[1].grid(True, linestyle='--', alpha=0.6)
+
+plt.suptitle('GraphSAGE — Augmentasi + SMOTE', fontsize=13, fontweight='bold')
+plt.tight_layout()
+plt.savefig('grafik_training_final.png', dpi=300, bbox_inches='tight')
+plt.show()
+
+
+=== CELL 42 ===
+import numpy as np, torch, torch.nn.functional as F
+from sklearn.metrics import (
+    accuracy_score, precision_score, recall_score,
+    f1_score, roc_auc_score, classification_report, confusion_matrix
+)
+import seaborn as sns, matplotlib.pyplot as plt
+
+def predict_with_graph(model, X_test_arr, X_train_arr, k=5):
+    model.eval()
+    X_combined = np.vstack([X_train_arr, X_test_arr])
+    x_tensor   = torch.tensor(X_combined, dtype=torch.float32)
+    edge_idx, _ = build_knn_graph(X_combined, k=k)
+
+    with torch.no_grad():
+        out        = model(x_tensor, edge_idx)
+        test_out   = out[len(X_train_arr):]
+        probs      = F.softmax(test_out, dim=1)
+        _, preds   = torch.max(test_out, 1)
+    return preds.cpu().numpy(), probs.cpu().numpy()
+
+y_pred, y_prob = predict_with_graph(
+    model, X_test.values, X_train_smote.values, k=K_NEIGHBORS)
+
+acc  = accuracy_score(y_test, y_pred)
+prec = precision_score(y_test, y_pred, average='weighted')
+rec  = recall_score(y_test, y_pred, average='weighted')
+f1   = f1_score(y_test, y_pred, average='weighted')
+auc  = roc_auc_score(y_test, y_prob, multi_class='ovr', average='weighted')
+
+print('=' * 60)
+print('HASIL EVALUASI MODEL GRAPH SAGE')
+print('=' * 60)
+print(f'Accuracy : {acc*100:.2f}%')
+print(f'Precision: {prec:.4f}')
+print(f'Recall   : {rec:.4f}')
+print(f'F1-Score : {f1:.4f}')
+print(f'ROC-AUC  : {auc:.4f}')
+
+target_names = ['Rendah', 'Sedang', 'Tinggi']
+print('\nClassification Report:')
+print(classification_report(y_test, y_pred, target_names=target_names))
+
+cm = confusion_matrix(y_test, y_pred)
+plt.figure(figsize=(8, 6))
+sns.heatmap(cm, annot=True, fmt='d', cmap='Greens',
+            xticklabels=target_names, yticklabels=target_names,
+            linewidths=0.5)
+plt.title('Confusion Matrix — Prediksi Risiko Obesitas', fontsize=13, fontweight='bold')
+plt.xlabel('Prediksi Model')
+plt.ylabel('Label Sebenarnya')
+plt.tight_layout()
+plt.savefig('confusion_matrix_final.png', dpi=300, bbox_inches='tight')
+plt.show()
+
+
+=== CELL 44 ===
+# ============================================================
+# UNIT TEST — build_knn_graph, GraphSAGE, predict_with_graph
+# ============================================================
+import unittest
+import numpy as np
+import torch
+
+class TestGraphSAGEPipeline(unittest.TestCase):
+
+    def setUp(self):
+        torch.manual_seed(0)
+        self.n_samples  = 30
+        self.n_features = 8
+        rng = np.random.RandomState(0)
+        self.X_small = rng.rand(self.n_samples, self.n_features)
+        self.y_small = rng.randint(0, 3, self.n_samples)
+
+    # ---------- build_knn_graph ----------
+    def test_knn_graph_happy_path(self):
+        edge_index, knn = build_knn_graph(self.X_small, k=5)
+        self.assertEqual(edge_index.shape[0], 2)
+        self.assertTrue(edge_index.shape[1] > 0)
+        # graf harus simetris: kalau (i, j) ada, (j, i) juga harus ada
+        edges = set(map(tuple, edge_index.t().tolist()))
+        for i, j in list(edges)[:20]:
+            self.assertIn((j, i), edges)
+
+    def test_knn_graph_k_near_max(self):
+        # edge case: k sebesar mungkin (hampir semua node lain jadi tetangga)
+        edge_index, _ = build_knn_graph(self.X_small, k=self.n_samples - 1)
+        self.assertTrue(edge_index.shape[1] > 0)
+
+    def test_knn_graph_single_feature_column(self):
+        # edge case: cuma 1 fitur numerik
+        X_1d = self.X_small[:, :1]
+        edge_index, _ = build_knn_graph(X_1d, k=3)
+        self.assertEqual(edge_index.shape[0], 2)
+
+    def test_knn_graph_duplicate_rows(self):
+        # edge case: banyak baris identik -> rawan tie di cosine similarity
+        X_dup = np.vstack([self.X_small[0:1]] * 10)
+        edge_index, _ = build_knn_graph(X_dup, k=3)
+        self.assertTrue(edge_index.shape[1] > 0)
+
+    # ---------- GraphSAGE forward ----------
+    def test_model_output_shape(self):
+        model_t = GraphSAGE(input_dim=self.n_features, hidden_dim=16, output_dim=3, dropout=0.2)
+        model_t.eval()
+        edge_index, _ = build_knn_graph(self.X_small, k=5)
+        x = torch.tensor(self.X_small, dtype=torch.float32)
+        out = model_t(x, edge_index)
+        self.assertEqual(tuple(out.shape), (self.n_samples, 3))
+
+    def test_model_embeddings_shape(self):
+        hidden_dim = 16
+        model_t = GraphSAGE(input_dim=self.n_features, hidden_dim=hidden_dim, output_dim=3, dropout=0.2)
+        model_t.eval()
+        edge_index, _ = build_knn_graph(self.X_small, k=5)
+        x = torch.tensor(self.X_small, dtype=torch.float32)
+        emb = model_t.get_embeddings(x, edge_index)
+        self.assertEqual(emb.shape[0], self.n_samples)
+        self.assertEqual(emb.shape[1], hidden_dim // 2)
+
+    def test_model_single_node_inference(self):
+        # edge case terkenal: BatchNorm1d gagal di mode training jika batch=1,
+        # tapi harus tetap aman saat model.eval() (pakai running stats)
+        model_t = GraphSAGE(input_dim=self.n_features, hidden_dim=16, output_dim=3, dropout=0.2)
+        model_t.eval()
+        x_one = torch.tensor(self.X_small[:1], dtype=torch.float32)
+        edge_empty = torch.empty((2, 0), dtype=torch.long)  # node baru tanpa tetangga
+        out = model_t(x_one, edge_empty)
+        self.assertEqual(tuple(out.shape), (1, 3))
+
+    # ---------- predict_with_graph ----------
+    def test_predict_with_graph_output(self):
+        model_t = GraphSAGE(input_dim=self.n_features, hidden_dim=16, output_dim=3, dropout=0.2)
+        n_train, n_test = 20, 10
+        X_tr = self.X_small[:n_train]
+        X_te = self.X_small[n_train:n_train + n_test]
+        preds, probs = predict_with_graph(model_t, X_te, X_tr, k=5)
+        self.assertEqual(preds.shape[0], n_test)
+        self.assertEqual(probs.shape, (n_test, 3))
+        np.testing.assert_allclose(probs.sum(axis=1), np.ones(n_test), atol=1e-5)
+
+    def test_predict_with_graph_empty_test_set(self):
+        # edge case: test set kosong -> tidak boleh crash, hasil harus kosong
+        model_t = GraphSAGE(input_dim=self.n_features, hidden_dim=16, output_dim=3, dropout=0.2)
+        X_tr = self.X_small
+        X_te = self.X_small[:0]
+        preds, probs = predict_with_graph(model_t, X_te, X_tr, k=5)
+        self.assertEqual(preds.shape[0], 0)
+        self.assertEqual(probs.shape[0], 0)
+
+
+_suite  = unittest.TestLoader().loadTestsFromTestCase(TestGraphSAGEPipeline)
+_runner = unittest.TextTestRunner(verbosity=2)
+_result = _runner.run(_suite)
+
+print(f"\nTotal: {_result.testsRun} | Gagal: {len(_result.failures)} | Error: {len(_result.errors)}")
+
+
+=== CELL 49 ===
+import pandas as pd
+import numpy as np
+from imblearn.over_sampling import SMOTE
+from sklearn.preprocessing import RobustScaler, LabelEncoder
+from sklearn.model_selection import train_test_split
+
+np.random.seed(42)
+
+# ── Best Parameters dari Optuna Trial #42 ───────────────────────────────────
+BEST_PARAMS = {
+    'hidden_dim'   : 192,
+    'dropout'      : 0.15899178241730913,
+    'lr'           : 0.006698315624369055,
+    'weight_decay' : 4.751044681089446e-05,
+    'k_neighbors'  : 5,
+    'n_aug_per_class': 2500,
+    'sedang_weight': 2.363173662103292,
+    'sedang_extra' : 1000,
+}
+
+print('=' * 65)
+print('BEST PARAMETERS DARI OPTUNA (Trial #42, Score: 0.9318)')
+print('=' * 65)
+for k, v in BEST_PARAMS.items():
+    print(f'  {k:20s}: {v}')
+
+# ── Augmentasi dengan ekstra Sedang ─────────────────────────────────────────
+print('\n' + '=' * 65)
+print('STEP 1: AUGMENTASI DATA (Sedang mendapat ekstra)')
+print('=' * 65)
+
+num_cols_aug   = ['age','vegetable_consumption','meal_per_day',
+                  'physical_activity','technology_time']
+num_cols_exist = [c for c in num_cols_aug if c in X.columns]
+
+N_AUG = {
+    'Rendah': BEST_PARAMS['n_aug_per_class'],
+    'Sedang': BEST_PARAMS['n_aug_per_class'] + BEST_PARAMS['sedang_extra'],
+    'Tinggi': BEST_PARAMS['n_aug_per_class'],
+}
+
+X_base = X.copy()
+y_base = df['risk_level'].copy().reset_index(drop=True)
+
+X_list = [X_base]
+y_list = [y_base]
+
+for kelas, n_aug in N_AUG.items():
+    mask     = y_base == kelas
+    idx_k    = np.where(mask)[0]
+    if len(idx_k) == 0:
+        continue
+    idx_samp = np.random.choice(idx_k, n_aug, replace=True)
+    X_new    = X_base.iloc[idx_samp].copy().reset_index(drop=True)
+    y_new    = pd.Series([kelas] * n_aug)
+
+    if num_cols_exist:
+        noise = np.random.normal(0, 0.08, (n_aug, len(num_cols_exist)))
+        X_new[num_cols_exist] = (X_new[num_cols_exist].values + noise).clip(min=0)
+
+    X_list.append(X_new)
+    y_list.append(y_new)
+
+X_aug_best = pd.concat(X_list, ignore_index=True)
+y_aug_best = pd.concat(y_list, ignore_index=True)
+
+print(f'Data awal        : {len(X_base)} baris')
+print(f'Data setelah aug : {len(X_aug_best)} baris')
+print(f'Distribusi setelah augmentasi:')
+print(y_aug_best.value_counts())
+
+# ── Encode ───────────────────────────────────────────────────────────────────
+le_best = LabelEncoder()
+le_best.fit(['Rendah','Sedang','Tinggi'])
+y_enc_best = le_best.transform(y_aug_best)
+
+# ── Scale ────────────────────────────────────────────────────────────────────
+scaler_best = RobustScaler()
+X_sc_best   = pd.DataFrame(
+    scaler_best.fit_transform(X_aug_best),
+    columns=X_aug_best.columns
+)
+
+# ── SMOTE ────────────────────────────────────────────────────────────────────
+print('\n' + '=' * 65)
+print('STEP 2: SMOTE — Penyeimbangan Final')
+print('=' * 65)
+
+smote_best       = SMOTE(random_state=42, k_neighbors=5)
+X_sm_best, y_sm_best = smote_best.fit_resample(X_sc_best, y_enc_best)
+X_sm_best = pd.DataFrame(X_sm_best, columns=X_sc_best.columns)
+y_sm_best = pd.Series(y_sm_best)
+
+print(f'Setelah SMOTE : {len(X_sm_best)} baris')
+print('Distribusi:')
+for i, lbl in enumerate(le_best.classes_):
+    print(f'  {i} ({lbl}): {(y_sm_best==i).sum()}')
+
+# ── Split 80/20 ───────────────────────────────────────────────────────────────
+print('\n' + '=' * 65)
+print('STEP 3: SPLIT 80/20')
+print('=' * 65)
+
+X_tr_best, X_te_best, y_tr_best, y_te_best = train_test_split(
+    X_sm_best, y_sm_best,
+    test_size=0.2, random_state=42, stratify=y_sm_best
+)
+X_tr_best = X_tr_best.reset_index(drop=True)
+X_te_best = X_te_best.reset_index(drop=True)
+y_tr_best = y_tr_best.reset_index(drop=True)
+y_te_best = y_te_best.reset_index(drop=True)
+
+print(f'Training : {len(X_tr_best)} | Testing : {len(X_te_best)}')
+
+
+=== CELL 50 ===
+import torch, random, copy
+import numpy as np
+from torch_geometric.data import Data
+
+# ── Seed ─────────────────────────────────────────────────────────────────────
+SEED = 42
+random.seed(SEED); np.random.seed(SEED); torch.manual_seed(SEED)
+if torch.cuda.is_available():
+    torch.cuda.manual_seed_all(SEED)
+
+# ── Graf KNN ─────────────────────────────────────────────────────────────────
+edge_best, _ = build_knn_graph(X_tr_best.values, k=BEST_PARAMS['k_neighbors'])
+train_data_best = Data(
+    x=torch.tensor(X_tr_best.values, dtype=torch.float32),
+    edge_index=edge_best,
+    y=torch.tensor(y_tr_best.values, dtype=torch.long)
+)
+
+print(f'Graf KNN (k={BEST_PARAMS["k_neighbors"]}):')
+print(f'  Node : {train_data_best.num_nodes:,}')
+print(f'  Edge : {train_data_best.num_edges:,}')
+
+# ── Class weights — Sedang 2.36x ─────────────────────────────────────────────
+# Rendah=0, Sedang=1, Tinggi=2
+cw_best = torch.tensor(
+    [1.0, BEST_PARAMS['sedang_weight'], 1.0],
+    dtype=torch.float32
+)
+print(f'\nClass weights:')
+print(f'  Rendah : {cw_best[0].item():.3f}')
+print(f'  Sedang : {cw_best[1].item():.3f}  ← {BEST_PARAMS["sedang_weight"]:.2f}x lebih berat')
+print(f'  Tinggi : {cw_best[2].item():.3f}')
+
+# ── Model GraphSAGE dengan best hidden_dim=192 ────────────────────────────────
+torch.manual_seed(SEED)
+model_best = GraphSAGE(
+    input_dim  = X_tr_best.shape[1],
+    hidden_dim = BEST_PARAMS['hidden_dim'],
+    output_dim = 3,
+    dropout    = BEST_PARAMS['dropout']
+)
+
+opt_best   = torch.optim.Adam(
+    model_best.parameters(),
+    lr           = BEST_PARAMS['lr'],
+    weight_decay = BEST_PARAMS['weight_decay']
+)
+crit_best  = torch.nn.CrossEntropyLoss(weight=cw_best)
+sched_best = torch.optim.lr_scheduler.ReduceLROnPlateau(
+    opt_best, mode='min', factor=0.5, patience=40)
+
+print(f'\nModel GraphSAGE:')
+print(f'  Input     : {X_tr_best.shape[1]}')
+print(f'  Hidden    : {BEST_PARAMS["hidden_dim"]}')
+print(f'  Dropout   : {BEST_PARAMS["dropout"]:.4f}')
+print(f'  LR        : {BEST_PARAMS["lr"]:.6f}')
+print(f'  Total param: {sum(p.numel() for p in model_best.parameters()):,}')
+
+
+=== CELL 51 ===
+import copy, torch, matplotlib.pyplot as plt
+
+EPOCHS_BEST   = 1000
+PATIENCE_BEST = 120
+
+losses_best, accs_best = [], []
+best_loss_b, best_acc_b = float('inf'), 0.0
+pat_b, best_st_b = 0, None
+
+print('Memulai training dengan Best Parameters dari Optuna...')
+print('=' * 65)
+
+for epoch in range(EPOCHS_BEST):
+    model_best.train()
+    opt_best.zero_grad()
+
+    out  = model_best(train_data_best.x, train_data_best.edge_index)
+    loss = crit_best(out, train_data_best.y)
+    loss.backward()
+    torch.nn.utils.clip_grad_norm_(model_best.parameters(), 1.0)
+    opt_best.step()
+
+    lv = loss.item()
+    sched_best.step(lv)
+
+    _, pred = torch.max(out, 1)
+    acc = (pred == train_data_best.y).sum().item() / len(train_data_best.y)
+
+    losses_best.append(lv)
+    accs_best.append(acc)
+
+    if lv < best_loss_b - 1e-5:
+        best_loss_b = lv
+        best_acc_b  = acc
+        pat_b       = 0
+        best_st_b   = copy.deepcopy(model_best.state_dict())
+    else:
+        pat_b += 1
+
+    if pat_b >= PATIENCE_BEST:
+        print(f'Early stopping di epoch {epoch+1}')
+        break
+
+    if (epoch+1) % 50 == 0:
+        lr_now = opt_best.param_groups[0]['lr']
+        print(f'Epoch [{epoch+1:4d}/{EPOCHS_BEST}] | '
+              f'Loss: {lv:.4f} | Acc: {acc*100:.2f}% | LR: {lr_now:.6f}')
+
+if best_st_b:
+    model_best.load_state_dict(best_st_b)
+
+print(f'\n{"="*65}')
+print('TRAINING SELESAI')
+print(f'{"="*65}')
+print(f'Best Loss : {best_loss_b:.4f}')
+print(f'Best Acc  : {best_acc_b*100:.2f}%')
+
+
+=== CELL 52 ===
+import matplotlib.pyplot as plt
+
+fig, axes = plt.subplots(1, 2, figsize=(14, 5))
+
+axes[0].plot(losses_best, linewidth=2, color='steelblue')
+axes[0].set_title('Training Loss — Best Parameters Optuna', fontweight='bold')
+axes[0].set_xlabel('Epoch')
+axes[0].set_ylabel('Loss')
+axes[0].grid(True, linestyle='--', alpha=0.6)
+
+axes[1].plot([a*100 for a in accs_best], linewidth=2, color='darkorange')
+axes[1].axhline(y=95, color='red',   linestyle='--', lw=1.5, label='Target 95%')
+axes[1].axhline(y=99, color='green', linestyle='--', lw=1.5, label='Target 99%')
+axes[1].set_title('Training Accuracy — Best Parameters Optuna', fontweight='bold')
+axes[1].set_xlabel('Epoch')
+axes[1].set_ylabel('Accuracy (%)')
+axes[1].legend()
+axes[1].grid(True, linestyle='--', alpha=0.6)
+
+plt.suptitle(
+    f'GraphSAGE — hidden=192, k=5, sedang_w=2.36, lr=0.0067',
+    fontsize=12, fontweight='bold'
+)
+plt.tight_layout()
+plt.savefig('grafik_training_best_optuna.png', dpi=300, bbox_inches='tight')
+plt.show()
+
+print(f'Best Training Loss : {best_loss_b:.4f}')
+print(f'Best Training Acc  : {best_acc_b*100:.2f}%')
+
+
+=== CELL 53 ===
+import numpy as np, torch, torch.nn.functional as F
+from sklearn.metrics import (
+    accuracy_score, precision_score, recall_score,
+    f1_score, roc_auc_score, classification_report, confusion_matrix
+)
+import seaborn as sns, matplotlib.pyplot as plt
+
+y_pred_best, y_prob_best = predict_with_graph(
+    model_best, X_te_best.values, X_tr_best.values,
+    k=BEST_PARAMS['k_neighbors']
+)
+
+acc_b  = accuracy_score(y_te_best, y_pred_best)
+prec_b = precision_score(y_te_best, y_pred_best, average='weighted')
+rec_b  = recall_score(y_te_best, y_pred_best, average='weighted')
+f1_b   = f1_score(y_te_best, y_pred_best, average='weighted')
+auc_b  = roc_auc_score(y_te_best, y_prob_best, multi_class='ovr', average='weighted')
+f1_per = f1_score(y_te_best, y_pred_best, average=None, zero_division=0)
+
+print('=' * 65)
+print('HASIL EVALUASI — BEST PARAMETERS DARI OPTUNA')
+print('=' * 65)
+print(f'Accuracy  : {acc_b*100:.2f}%')
+print(f'Precision : {prec_b:.4f}')
+print(f'Recall    : {rec_b:.4f}')
+print(f'F1-Score  : {f1_b:.4f}')
+print(f'ROC-AUC   : {auc_b:.4f}')
+print(f'\nF1 per Kelas:')
+print(f'  Rendah : {f1_per[0]:.4f}')
+print(f'  Sedang : {f1_per[1]:.4f}  ← target utama')
+print(f'  Tinggi : {f1_per[2]:.4f}')
+
+target_names = ['Rendah','Sedang','Tinggi']
+print('\nClassification Report:')
+print(classification_report(y_te_best, y_pred_best, target_names=target_names))
+
+# Confusion Matrix ganda
+cm = confusion_matrix(y_te_best, y_pred_best)
+fig, axes = plt.subplots(1, 2, figsize=(16, 6))
+
+sns.heatmap(cm, annot=True, fmt='d', cmap='Greens',
+            xticklabels=target_names, yticklabels=target_names,
+            linewidths=0.5, ax=axes[0])
+axes[0].set_title('Confusion Matrix (Jumlah)', fontsize=13, fontweight='bold')
+axes[0].set_xlabel('Prediksi Model')
+axes[0].set_ylabel('Label Sebenarnya')
+
+cm_pct = cm.astype(float) / cm.sum(axis=1, keepdims=True) * 100
+sns.heatmap(cm_pct, annot=True, fmt='.1f', cmap='Blues',
+            xticklabels=target_names, yticklabels=target_names,
+            linewidths=0.5, ax=axes[1])
+axes[1].set_title('Confusion Matrix (Persentase %)', fontsize=13, fontweight='bold')
+axes[1].set_xlabel('Prediksi Model')
+axes[1].set_ylabel('Label Sebenarnya')
+
+plt.suptitle(
+    f'GraphSAGE — Accuracy: {acc_b*100:.2f}% | Best Params Optuna',
+    fontsize=13, fontweight='bold'
+)
+plt.tight_layout()
+plt.savefig('confusion_matrix_best_optuna.png', dpi=300, bbox_inches='tight')
+plt.show()
+
+# Perbandingan
+print('\n' + '=' * 65)
+print('PERBANDINGAN SEBELUM vs SESUDAH OPTIMASI')
+print('=' * 65)
+print(f'  {"Metrik":20s} {"Sebelum":>10s} {"Sesudah":>10s} {"Delta":>8s}')
+print(f'  {"-"*50}')
+rows = [
+    ("Accuracy",  0.9162, acc_b),
+    ("F1-Score",  0.9162, f1_b),
+    ("F1 Rendah", 0.9400, f1_per[0]),
+    ("F1 Sedang", 0.8900, f1_per[1]),
+    ("F1 Tinggi", 0.9200, f1_per[2]),
+]
+for name, before, after in rows:
+    delta = after - before
+    sign  = "+" if delta >= 0 else ""
+    print(f'  {name:20s} {before:>10.4f} {after:>10.4f} {sign}{delta:>7.4f}')
+
+
+=== CELL 55 ===
+# ============================================================
+# VISUALISASI NODE — Embedding Laten Model GraphSAGE (get_embeddings)
+# Proyeksi ke 2D (t-SNE / PCA) untuk melihat bagaimana model
+# mengelompokkan node menurut tingkat risikonya.
+# ============================================================
+import matplotlib.pyplot as plt
+from sklearn.decomposition import PCA
+from sklearn.manifold import TSNE
+
+def visualize_node_embeddings(model, X_arr, y_arr, k=5, method='tsne',
+                               title='Visualisasi Embedding Node GraphSAGE'):
+    model.eval()
+    edge_idx, _ = build_knn_graph(X_arr, k=k)
+    x_tensor = torch.tensor(X_arr, dtype=torch.float32)
+
+    with torch.no_grad():
+        emb = model.get_embeddings(x_tensor, edge_idx).cpu().numpy()
+
+    reducer = PCA(n_components=2, random_state=42) if method == 'pca' else \
+              TSNE(n_components=2, random_state=42, perplexity=30, init='pca')
+    emb_2d = reducer.fit_transform(emb)
+
+    target_names = ['Rendah', 'Sedang', 'Tinggi']
+    colors = ['#2ecc71', '#f39c12', '#e74c3c']
+
+    plt.figure(figsize=(9, 7))
+    for i, cls in enumerate(target_names):
+        mask = y_arr == i
+        plt.scatter(emb_2d[mask, 0], emb_2d[mask, 1],
+                    c=colors[i], label=cls, alpha=0.6, s=18, edgecolors='none')
+    plt.legend(title='Risk Level')
+    plt.title(f'{title} ({method.upper()})', fontsize=13, fontweight='bold')
+    plt.xlabel('Dim 1'); plt.ylabel('Dim 2')
+    plt.tight_layout()
+    plt.savefig(f'node_embedding_{method}.png', dpi=300, bbox_inches='tight')
+    plt.show()
+    return emb, emb_2d
+
+# Embedding pada data training (graf sama seperti yang dipakai saat training)
+emb_train, emb_train_2d = visualize_node_embeddings(
+    model_best, X_tr_best.values, y_tr_best.values,
+    k=BEST_PARAMS['k_neighbors'], method='tsne',
+    title='Embedding Node GraphSAGE (Data Training, Best Params)'
+)
+
+
+=== CELL 56 ===
+# ============================================================
+# VISUALISASI NODE — Struktur Graf kNN (sample node & edge)
+# Menunjukkan bentuk graf yang benar-benar dipakai GraphSAGE:
+# node = individu, edge = kemiripan cosine antar fitur gaya hidup.
+# ============================================================
+import networkx as nx
+import numpy as np
+import matplotlib.pyplot as plt
+
+def visualize_knn_graph_sample(X_arr, y_arr, k=5, n_sample=150, seed=42,
+                                title='Struktur Graf kNN'):
+    rng = np.random.default_rng(seed)
+    n_sample = min(n_sample, len(X_arr))
+    idx_sample = rng.choice(len(X_arr), size=n_sample, replace=False)
+    X_sample = X_arr[idx_sample]
+    y_sample = np.asarray(y_arr)[idx_sample]
+
+    edge_idx, _ = build_knn_graph(X_sample, k=k)
+    edges = edge_idx.t().numpy()
+
+    G = nx.Graph()
+    for i in range(len(X_sample)):
+        G.add_node(i, label=int(y_sample[i]))
+    G.add_edges_from(edges.tolist())
+
+    target_names = ['Rendah', 'Sedang', 'Tinggi']
+    colors_map = ['#2ecc71', '#f39c12', '#e74c3c']
+    node_colors = [colors_map[G.nodes[n]['label']] for n in G.nodes()]
+
+    pos = nx.spring_layout(G, seed=seed, k=0.3)
+    plt.figure(figsize=(10, 8))
+    nx.draw_networkx_edges(G, pos, alpha=0.25, width=0.6)
+    nx.draw_networkx_nodes(G, pos, node_color=node_colors, node_size=60, alpha=0.9)
+    handles = [plt.Line2D([0], [0], marker='o', color='w', markerfacecolor=c,
+                           markersize=9, label=t)
+               for c, t in zip(colors_map, target_names)]
+    plt.legend(handles=handles, title='Risk Level')
+    plt.title(f'{title} (sample {len(X_sample)} node, k={k})', fontsize=13, fontweight='bold')
+    plt.axis('off')
+    plt.tight_layout()
+    plt.savefig('graph_structure_sample.png', dpi=300, bbox_inches='tight')
+    plt.show()
+
+    avg_deg = 2 * G.number_of_edges() / G.number_of_nodes()
+    print(f'Node: {G.number_of_nodes()} | Edge: {G.number_of_edges()} | Rata-rata derajat: {avg_deg:.2f}')
+    return G
+
+G_sample = visualize_knn_graph_sample(
+    X_tr_best.values, y_tr_best.values, k=BEST_PARAMS['k_neighbors']
+)
+
+
+=== CELL 57 ===
+# ============================================================
+# VISUALISASI NODE & EDGE — Contoh 1 Orang dan Tetangga Terdekatnya
+# (versi sederhana: fokus ke SATU node, biar gampang dijelaskan ke dosen)
+# ============================================================
+import networkx as nx
+import numpy as np
+import matplotlib.pyplot as plt
+from sklearn.neighbors import NearestNeighbors
+
+def visualize_single_node_and_neighbors(X_arr, y_arr, node_idx=0, k=5, seed=42,
+                                         title='Satu Node dan Tetangga Terdekatnya'):
+    X_arr = np.asarray(X_arr)
+    y_arr = np.asarray(y_arr)
+
+    # Cari k tetangga terdekat untuk node_idx, pakai metric sama seperti build_knn_graph (cosine)
+    knn = NearestNeighbors(n_neighbors=k + 1, metric='cosine')
+    knn.fit(X_arr)
+    _, indices = knn.kneighbors(X_arr[node_idx:node_idx + 1])
+    neighbor_idx = indices[0][1:]  # index 0 dibuang karena itu dirinya sendiri
+
+    G = nx.Graph()
+    G.add_node(node_idx, label=int(y_arr[node_idx]))
+    for n in neighbor_idx:
+        G.add_node(n, label=int(y_arr[n]))
+        G.add_edge(node_idx, n)
+
+    target_names = ['Rendah', 'Sedang', 'Tinggi']
+    colors_map   = ['#2ecc71', '#f39c12', '#e74c3c']
+
+    pos = nx.spring_layout(G, seed=seed, k=0.8)
+    node_colors = [colors_map[G.nodes[n]['label']] if n != node_idx else '#8e44ad' for n in G.nodes()]
+    node_sizes  = [900 if n == node_idx else 500 for n in G.nodes()]
+
+    plt.figure(figsize=(8, 6))
+    nx.draw_networkx_edges(G, pos, width=1.5, alpha=0.6)
+    nx.draw_networkx_nodes(G, pos, node_color=node_colors, node_size=node_sizes,
+                            edgecolors='white', linewidths=1.5)
+    labels = {node_idx: 'Kamu'}
+    labels.update({n: target_names[G.nodes[n]['label']][0] for n in neighbor_idx})
+    nx.draw_networkx_labels(G, pos, labels=labels, font_color='white', font_weight='bold', font_size=10)
+
+    handles = [plt.Line2D([0], [0], marker='o', color='w', markerfacecolor='#8e44ad',
+                           markersize=12, label='Node terpilih')]
+    handles += [plt.Line2D([0], [0], marker='o', color='w', markerfacecolor=c, markersize=10, label=t)
+                for c, t in zip(colors_map, target_names)]
+    plt.legend(handles=handles, loc='upper left', bbox_to_anchor=(1.02, 1))
+    plt.title(f'{title}\nRisk level node ini: {target_names[int(y_arr[node_idx])]} | '
+              f'k={k} tetangga terdekat (cosine)', fontsize=12, fontweight='bold')
+    plt.axis('off')
+    plt.tight_layout()
+    plt.savefig('single_node_neighbors.png', dpi=300, bbox_inches='tight')
+    plt.show()
+
+    print(f'Node terpilih (index {node_idx}) - Risk level: {target_names[int(y_arr[node_idx])]}')
+    print(f'Tetangga terdekatnya (index): {neighbor_idx.tolist()}')
+    print('Risk level tiap tetangga:')
+    for n in neighbor_idx:
+        print(f'  Node {n}: {target_names[int(y_arr[n])]}')
+
+# Ganti node_idx dengan index orang mana pun yang mau kamu tunjukkan
+visualize_single_node_and_neighbors(
+    X_tr_best.values, y_tr_best.values, node_idx=0, k=BEST_PARAMS['k_neighbors']
+)

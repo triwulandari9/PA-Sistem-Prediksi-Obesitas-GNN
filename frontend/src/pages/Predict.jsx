@@ -55,8 +55,8 @@ const waterOptions = [
 
 const mealOptions = [
   { value: '1', label: '1 - 2 kali' },
-  { value: '2', label: '3 kali' },
-  { value: '3', label: 'Lebih dari 3 kali' }
+  { value: '3', label: '3 kali' },
+  { value: '4', label: 'Lebih dari 3 kali' }
 ];
 
 const snackingOptions = [
