@@ -71,8 +71,7 @@ export const DetailPredictionModal = ({ isOpen, prediction, onClose }) => {
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-900/60 backdrop-blur-sm fade-in">
       <div className="bg-white rounded-2xl max-w-2xl w-full max-h-[90vh] flex flex-col shadow-2xl border border-slate-100 overflow-hidden">
-        
-        {/* Header */}
+
         <div className="px-6 py-4 border-b border-slate-100 flex items-center justify-between bg-slate-50">
           <div className="flex items-center space-x-3">
             <div className="p-2 bg-emerald-100 rounded-xl text-emerald-700">
@@ -86,7 +85,7 @@ export const DetailPredictionModal = ({ isOpen, prediction, onClose }) => {
               </p>
             </div>
           </div>
-          <button 
+          <button
             onClick={onClose}
             className="text-slate-400 hover:text-slate-600 p-1.5 rounded-lg hover:bg-slate-200/50 transition-colors"
           >
@@ -94,10 +93,8 @@ export const DetailPredictionModal = ({ isOpen, prediction, onClose }) => {
           </button>
         </div>
 
-        {/* Modal Body */}
         <div className="p-6 overflow-y-auto space-y-6">
-          
-          {/* Result Card */}
+
           <div className="bg-slate-50 border border-slate-200 rounded-xl p-5 flex flex-col sm:flex-row items-center justify-between gap-4">
             <div>
               <span className="text-xs font-semibold text-slate-500 uppercase tracking-wider block mb-1">Status Prediksi Model GraphSAGE (GNN)</span>
@@ -123,7 +120,6 @@ export const DetailPredictionModal = ({ isOpen, prediction, onClose }) => {
             )}
           </div>
 
-          {/* 14 Features Grid */}
           <div>
             <h4 className="text-sm font-bold text-slate-800 mb-3 flex items-center gap-2">
               <span className="w-2 h-2 rounded-full bg-emerald-500"></span>
@@ -139,7 +135,6 @@ export const DetailPredictionModal = ({ isOpen, prediction, onClose }) => {
             </div>
           </div>
 
-          {/* Recommendations if any */}
           {prediction.recommendations && prediction.recommendations.length > 0 && (
             <div className="bg-emerald-50/70 border border-emerald-200/70 rounded-xl p-4">
               <h4 className="text-xs font-bold text-emerald-900 uppercase tracking-wider mb-2 flex items-center gap-1.5">
@@ -159,7 +154,6 @@ export const DetailPredictionModal = ({ isOpen, prediction, onClose }) => {
 
         </div>
 
-        {/* Footer */}
         <div className="px-6 py-3 border-t border-slate-100 bg-slate-50 flex justify-end">
           <button
             onClick={onClose}

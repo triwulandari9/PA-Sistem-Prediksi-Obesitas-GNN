@@ -5,13 +5,11 @@ import numpy as np
 from flask import Flask, request, jsonify
 from flask_cors import CORS
 
-# --- APP INITIALIZATION ---
 app = Flask(__name__)
 CORS(app, resources={r"/*": {"origins": "*"}})
 
 BASE_DIR = os.path.dirname(os.path.abspath(__file__))
 
-# Load GNN Weights & Scaler from Lightweight Package
 pkg_path = os.path.join(BASE_DIR, 'gnn_package.json')
 weights = {}
 scaler_center = None
@@ -27,7 +25,7 @@ FEATURE_NAMES = [
 try:
     with open(pkg_path, 'r', encoding='utf-8') as f:
         pkg = json.load(f)
-    
+
     weights = {k: np.array(v, dtype=np.float32) for k, v in pkg['weights'].items()}
     scaler_center = np.array(pkg['scaler']['center'], dtype=np.float32)
     scaler_scale = np.array(pkg['scaler']['scale'], dtype=np.float32)
@@ -43,11 +41,9 @@ def numpy_sage_layer(x, conv_name, bn_name=None, use_elu=True):
     W_l = weights[f'{conv_name}.lin_l.weight']
     W_r = weights[f'{conv_name}.lin_r.weight']
     bias = weights[f'{conv_name}.lin_l.bias']
-    
-    # Combined linear transformation (SAGEConv with self-loop)
+
     out = x @ (W_l.T + W_r.T) + bias
-    
-    # BatchNorm1d (eval mode using running stats)
+
     if bn_name is not None:
         gamma = weights[f'{bn_name}.weight']
         beta = weights[f'{bn_name}.bias']
@@ -55,11 +51,10 @@ def numpy_sage_layer(x, conv_name, bn_name=None, use_elu=True):
         var = weights[f'{bn_name}.running_var']
         eps = 1e-5
         out = (out - mean) / np.sqrt(var + eps) * gamma + beta
-    
-    # ELU activation
+
     if use_elu:
         out = np.where(out > 0, out, np.exp(out) - 1.0)
-        
+
     return out
 
 def clean_val(val):
@@ -87,7 +82,7 @@ def transform_to_model_features(raw_input):
     - 6 numeric features scaled with RobustScaler
     - 23 one-hot categorical features
     """
-    # 1. Numeric values
+
     age = float(raw_input.get('age', raw_input.get('umur', 25)))
     veg = float(raw_input.get('vegetable_consumption', raw_input.get('kat_makan_sayur', 2)))
     meal = float(raw_input.get('meal_per_day', raw_input.get('jml_makan_utama', 3)))
@@ -98,15 +93,12 @@ def transform_to_model_features(raw_input):
     raw_num = np.array([age, veg, meal, water, act, screen], dtype=np.float32)
     scaled_num = (raw_num - scaler_center) / scaler_scale
 
-    # 2. Categorical mapping
-    # Gender
     g_val = clean_val(raw_input.get('gender', raw_input.get('jenis_kelamin', 0))).lower()
     if g_val in ['1', 'male', 'laki-laki', 'pria']:
         gender_cat = 'Male'
     else:
         gender_cat = 'Female'
 
-    # Alcohol: 3/no, 2/Sometimes, 1/Frequently, 0/Always
     alc_val = clean_val(raw_input.get('alcohol', raw_input.get('kat_konsum_alkohol', 3))).lower()
     alc_map = {'0': 'Always', '1': 'Frequently', '2': 'Sometimes', '3': 'no'}
     if alc_val in alc_map:
@@ -120,23 +112,18 @@ def transform_to_model_features(raw_input):
     else:
         alc_cat = 'no'
 
-    # High calorie food: 0/no, 1/yes
     favc_val = clean_val(raw_input.get('high_calorie_food', raw_input.get('kat_makan_berkalori', 0))).lower()
     favc_cat = 'yes' if favc_val in ['1', 'yes', 'ya', 'true'] else 'no'
 
-    # Calorie monitoring: 0/no, 1/yes
     scc_val = clean_val(raw_input.get('calorie_monitoring', raw_input.get('monitoring_kalori', 0))).lower()
     scc_cat = 'yes' if scc_val in ['1', 'yes', 'ya', 'true'] else 'no'
 
-    # Smoking: 0/no, 1/yes
     smoke_val = clean_val(raw_input.get('smoking', raw_input.get('kat_merokok', 0))).lower()
     smoke_cat = 'yes' if smoke_val in ['1', 'yes', 'ya', 'true'] else 'no'
 
-    # Family history: 0/no, 1/yes
     fh_val = clean_val(raw_input.get('family_history', raw_input.get('riwayat_obesitas', 0))).lower()
     fh_cat = 'yes' if fh_val in ['1', 'yes', 'ya', 'true'] else 'no'
 
-    # Snacking: 3/no, 2/Sometimes, 1/Frequently, 0/Always
     snack_val = clean_val(raw_input.get('snacking', raw_input.get('kat_makan_cemilan', 2))).lower()
     snack_map = {'0': 'Always', '1': 'Frequently', '2': 'Sometimes', '3': 'no'}
     if snack_val in snack_map:
@@ -150,18 +137,16 @@ def transform_to_model_features(raw_input):
     else:
         snack_cat = 'no'
 
-    # Transport: 0/Automobile, 1/Bike, 2/Motorbike, 3/Public_Transportation, 4/Walking
     trans_val = clean_val(raw_input.get('transport', raw_input.get('jenis_transportasi', 3))).lower()
     trans_map = {
         '0': 'Automobile', '1': 'Bike', '2': 'Motorbike', '3': 'Public_Transportation', '4': 'Walking',
-        'automobile': 'Automobile', 'bike': 'Bike', 'motorbike': 'Motorbike', 
+        'automobile': 'Automobile', 'bike': 'Bike', 'motorbike': 'Motorbike',
         'public_transportation': 'Public_Transportation', 'walking': 'Walking',
         'mobil': 'Automobile', 'sepeda': 'Bike', 'motor': 'Motorbike', 'sepeda motor': 'Motorbike',
         'umum': 'Public_Transportation', 'transportasi umum': 'Public_Transportation', 'jalan kaki': 'Walking'
     }
     trans_cat = trans_map.get(trans_val, 'Public_Transportation')
 
-    # Construct the vector according to feature_order
     vec = np.zeros(len(feature_order), dtype=np.float32)
     vec[:6] = scaled_num
 
@@ -182,23 +167,21 @@ def transform_to_model_features(raw_input):
     return vec
 
 def numpy_gnn_predict(feature_vector):
-    # GraphSAGE 4-Layer Forward Pass
+
     x = numpy_sage_layer(feature_vector, 'conv1', 'bn1', use_elu=True)
     x = numpy_sage_layer(x, 'conv2', 'bn2', use_elu=True)
     x = numpy_sage_layer(x, 'conv3', 'bn3', use_elu=True)
     logits = numpy_sage_layer(x, 'conv4', bn_name=None, use_elu=False)
-    
-    # Softmax Probabilities
+
     exp_logits = np.exp(logits - np.max(logits))
     probs = exp_logits / np.sum(exp_logits)
     pred_idx = int(np.argmax(probs))
-    
+
     return pred_idx, probs
 
 def generate_recommendations(data, risk_level):
     recommendations = []
-    
-    # Rekomendasi berdasarkan risiko umum
+
     if risk_level == 'HIGH':
         recommendations.append("Prioritaskan konsultasi berkala dengan dokter spesialis gizi klinik atau nutrisionis untuk evaluasi komprehensif.")
         recommendations.append("Lakukan pemeriksaan profil metabolik dasar (gula darah puasa, HbA1c, dan profil lipid).")
@@ -208,16 +191,15 @@ def generate_recommendations(data, risk_level):
     else:
         recommendations.append("Pertahankan pola hidup sehat, asupan bergizi seimbang, dan rutinitas aktivitas fisik Anda saat ini.")
 
-    # Rekomendasi spesifik berdasarkan input fitur
     if data.get('frek_aktivitas_fisik', data.get('physical_activity', 0)) <= 1:
         recommendations.append("Tingkatkan frekuensi aktivitas fisik minimal 150 menit per minggu (misal jalan cepat atau bersepeda santai 30 menit, 5x seminggu).")
-    
+
     if data.get('jml_konsum_air', data.get('water_intake', 2)) < 2:
         recommendations.append("Cukupi kebutuhan hidrasi harian minimal 2-2.5 liter air putih untuk mengoptimalkan metabolisme tubuh.")
-    
+
     if data.get('kat_makan_berkalori', data.get('high_calorie_food', 0)) == 1:
         recommendations.append("Kurangi konsumsi makanan olahan tinggi lemak jenuh, gula sederhana, dan gorengan secara bertahap.")
-        
+
     if data.get('kat_makan_sayur', data.get('vegetable_consumption', 2)) <= 1:
         recommendations.append("Perbanyak porsi sayur dan buah kaya serat dalam setiap sesi makan utama untuk memberi rasa kenyang lebih lama.")
 
@@ -252,7 +234,6 @@ def predict():
         if not req_data:
             return jsonify({"error": "Payload JSON tidak ditemukan"}), 400
 
-        # Normalisasi key mapping (Mendukung 100% Bahasa Indonesia sesuai ERD & Fallback Bahasa Inggris)
         umur = float(req_data.get('umur', req_data.get('age', req_data.get('Age', 25))))
         jenis_kelamin = float(req_data.get('jenis_kelamin', req_data.get('gender', req_data.get('Gender', 0))))
         riwayat_obesitas = float(req_data.get('riwayat_obesitas', req_data.get('family_history', req_data.get('family_history_with_overweight', 0))))
@@ -268,7 +249,6 @@ def predict():
         kat_konsum_alkohol = float(req_data.get('kat_konsum_alkohol', req_data.get('alcohol', req_data.get('calc', req_data.get('CALC', 0)))))
         jenis_transportasi = float(req_data.get('jenis_transportasi', req_data.get('transport', req_data.get('mtrans', req_data.get('MTRANS', 3)))))
 
-        # Validasi batas umur
         if umur <= 0 or umur > 120:
             return jsonify({"error": "Nilai umur harus berada di rentang 1 - 120 tahun."}), 400
 
@@ -289,22 +269,19 @@ def predict():
             "jenis_transportasi": jenis_transportasi
         }
 
-        # Bentuk vektor fitur (29 dimensi: 6 numerik diskalakan + 23 one-hot)
         feature_vector = transform_to_model_features(features_dict)
 
-        # Prediksi menggunakan Lightweight GNN Engine
         pred_idx, probs = numpy_gnn_predict(feature_vector)
 
         label_name = classes[pred_idx] if pred_idx < len(classes) else "Sedang"
-        
-        # Standardisasi kategori risiko kode sistem: LOW, MEDIUM, HIGH
+
         risk_code_map = {
             'Rendah': 'LOW',
             'Sedang': 'MEDIUM',
             'Tinggi': 'HIGH'
         }
         risk_code = risk_code_map.get(label_name, 'MEDIUM')
-        
+
         prob_low = float(probs[0])
         prob_medium = float(probs[1])
         prob_high = float(probs[2])

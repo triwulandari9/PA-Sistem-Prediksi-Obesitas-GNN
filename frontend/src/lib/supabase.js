@@ -4,25 +4,22 @@ const supabaseUrl = import.meta.env.VITE_SUPABASE_URL || '';
 const supabaseAnonKey = import.meta.env.VITE_SUPABASE_ANON_KEY || '';
 
 export const isSupabaseConfigured = Boolean(
-  supabaseUrl && 
-  supabaseAnonKey && 
+  supabaseUrl &&
+  supabaseAnonKey &&
   !supabaseUrl.includes('placeholder') &&
   supabaseUrl.startsWith('http')
 );
 
-// Real Supabase Client if configured
 export const supabase = isSupabaseConfigured
   ? createClient(supabaseUrl, supabaseAnonKey)
   : null;
 
-// Local fallback store keys
 const STORAGE_KEYS = {
   USERS: 'gnn_obesity_users',
   SESSION: 'gnn_obesity_session',
   PREDICTIONS: 'gnn_obesity_predictions'
 };
 
-// Initialize default mock admin & dummy data in local store if empty
 const initLocalStore = () => {
   if (!localStorage.getItem(STORAGE_KEYS.USERS)) {
     const defaultUsers = [
@@ -82,14 +79,13 @@ const initLocalStore = () => {
 
 initLocalStore();
 
-// Local Auth & DB Mock Provider (Used when Supabase Env is not yet set)
 export const localDb = {
-  // Auth
+
   async signUp({ email, password, name, role = 'user' }) {
     const users = JSON.parse(localStorage.getItem(STORAGE_KEYS.USERS) || '[]');
     const cleanName = (name || email).trim();
-    const existing = users.find(u => 
-      u.name.toLowerCase() === cleanName.toLowerCase() || 
+    const existing = users.find(u =>
+      u.name.toLowerCase() === cleanName.toLowerCase() ||
       (u.email && u.email.toLowerCase() === email.toLowerCase())
     );
     if (existing) {
@@ -105,8 +101,7 @@ export const localDb = {
     };
     users.push(newUser);
     localStorage.setItem(STORAGE_KEYS.USERS, JSON.stringify(users));
-    
-    // Auto session
+
     const sessionUser = { id: newUser.id, name: newUser.name, email: newUser.email, role: newUser.role };
     localStorage.setItem(STORAGE_KEYS.SESSION, JSON.stringify(sessionUser));
     return { data: { user: sessionUser }, error: null };
@@ -115,8 +110,8 @@ export const localDb = {
   async signIn({ email, password }) {
     const users = JSON.parse(localStorage.getItem(STORAGE_KEYS.USERS) || '[]');
     const clean = (email || '').trim().toLowerCase();
-    const user = users.find(u => 
-      (u.name.toLowerCase() === clean || (u.email && u.email.toLowerCase() === clean)) && 
+    const user = users.find(u =>
+      (u.name.toLowerCase() === clean || (u.email && u.email.toLowerCase() === clean)) &&
       u.password === password
     );
     if (!user) {
@@ -137,7 +132,6 @@ export const localDb = {
     return sess ? JSON.parse(sess) : null;
   },
 
-  // Predictions DB
   async savePrediction(predData) {
     const preds = JSON.parse(localStorage.getItem(STORAGE_KEYS.PREDICTIONS) || '[]');
     const newRecord = {
@@ -159,7 +153,7 @@ export const localDb = {
     const preds = JSON.parse(localStorage.getItem(STORAGE_KEYS.PREDICTIONS) || '[]');
     const users = JSON.parse(localStorage.getItem(STORAGE_KEYS.USERS) || '[]');
     const userMap = Object.fromEntries(users.map(u => [u.id, u]));
-    
+
     return preds.map(p => ({
       ...p,
       user_name: userMap[p.user_id]?.name || 'User ' + p.user_id.slice(-4),
@@ -174,7 +168,6 @@ export const localDb = {
     return true;
   },
 
-  // Users DB (Admin)
   async getAllUsers() {
     const users = JSON.parse(localStorage.getItem(STORAGE_KEYS.USERS) || '[]');
     return users.map(({ password, ...rest }) => rest);
@@ -185,7 +178,6 @@ export const localDb = {
     users = users.filter(u => u.id !== userId);
     localStorage.setItem(STORAGE_KEYS.USERS, JSON.stringify(users));
 
-    // Also delete associated predictions
     let preds = JSON.parse(localStorage.getItem(STORAGE_KEYS.PREDICTIONS) || '[]');
     preds = preds.filter(p => p.user_id !== userId);
     localStorage.setItem(STORAGE_KEYS.PREDICTIONS, JSON.stringify(preds));

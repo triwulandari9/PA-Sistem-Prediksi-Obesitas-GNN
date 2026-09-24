@@ -1,15 +1,15 @@
 import React from 'react';
 import { useLocation, Link, Navigate } from 'react-router-dom';
-import { 
-  ShieldCheck, 
-  AlertTriangle, 
-  AlertOctagon, 
-  CheckCircle2, 
-  ArrowRight, 
-  RotateCcw, 
-  History, 
-  ShieldAlert, 
-  Heart, 
+import {
+  ShieldCheck,
+  AlertTriangle,
+  AlertOctagon,
+  CheckCircle2,
+  ArrowRight,
+  RotateCcw,
+  History,
+  ShieldAlert,
+  Heart,
   Activity,
   Sparkles
 } from 'lucide-react';
@@ -28,7 +28,6 @@ export const Result = () => {
   const probabilities = predictionData.probabilities || { low: 0, medium: 0, high: 0 };
   const recommendations = predictionData.recommendations || [];
 
-  // Theme styling based on Risk Code
   const getTheme = () => {
     if (riskCode === 'LOW' || riskName === 'Rendah') {
       return {
@@ -54,7 +53,7 @@ export const Result = () => {
         badgeColor: 'bg-amber-500 text-white'
       };
     }
-    // High
+
     return {
       bgGradient: 'from-rose-500/10 via-rose-500/5 to-transparent',
       borderColor: 'border-rose-300',
@@ -72,15 +71,13 @@ export const Result = () => {
 
   return (
     <div className="max-w-4xl mx-auto py-10 px-4 sm:px-6 lg:px-8 fade-in space-y-8">
-      
-      {/* RESULT MAIN CARD */}
+
       <div className={`bg-white rounded-3xl p-6 sm:p-10 shadow-xl border-2 ${theme.borderColor} relative overflow-hidden`}>
-        
-        {/* Background Accent Glow */}
+
         <div className={`absolute -top-24 -right-24 w-72 h-72 rounded-full bg-gradient-to-br ${theme.bgGradient} blur-3xl pointer-events-none`}></div>
 
         <div className="flex flex-col items-center text-center space-y-4">
-          
+
           <div className="inline-flex items-center gap-2 px-3.5 py-1 rounded-full bg-slate-100 text-slate-700 text-xs font-semibold uppercase tracking-wider">
             <Sparkles className="w-3.5 h-3.5 text-emerald-600" />
             <span>Hasil Analisis GraphSAGE (GNN)</span>
@@ -102,15 +99,13 @@ export const Result = () => {
             </p>
           </div>
 
-          {/* Probability Distribution Cards */}
           <div className="w-full max-w-xl pt-6">
             <span className="text-xs font-bold uppercase tracking-wider text-slate-500 block mb-3">
               Distribusi Probabilitas Kelas (Softmax Output)
             </span>
-            
+
             <div className="grid grid-cols-3 gap-3 sm:gap-4">
-              
-              {/* Low */}
+
               <div className="p-3.5 rounded-2xl bg-emerald-50/70 border border-emerald-200 text-center">
                 <span className="text-[11px] font-bold text-emerald-800 uppercase block">Rendah</span>
                 <span className="text-lg sm:text-xl font-extrabold text-emerald-700 block mt-0.5">
@@ -121,7 +116,6 @@ export const Result = () => {
                 </div>
               </div>
 
-              {/* Medium */}
               <div className="p-3.5 rounded-2xl bg-amber-50/70 border border-amber-200 text-center">
                 <span className="text-[11px] font-bold text-amber-900 uppercase block">Sedang</span>
                 <span className="text-lg sm:text-xl font-extrabold text-amber-700 block mt-0.5">
@@ -132,7 +126,6 @@ export const Result = () => {
                 </div>
               </div>
 
-              {/* High */}
               <div className="p-3.5 rounded-2xl bg-rose-50/70 border border-rose-200 text-center">
                 <span className="text-[11px] font-bold text-rose-800 uppercase block">Tinggi</span>
                 <span className="text-lg sm:text-xl font-extrabold text-rose-700 block mt-0.5">
@@ -150,7 +143,6 @@ export const Result = () => {
 
       </div>
 
-      {/* LIFESTYLE RECOMMENDATIONS */}
       {recommendations.length > 0 && (
         <div className="bg-white rounded-3xl p-6 sm:p-8 shadow-md border border-slate-200">
           <div className="flex items-center space-x-2.5 pb-4 mb-4 border-b border-slate-100">
@@ -169,7 +161,6 @@ export const Result = () => {
         </div>
       )}
 
-      {/* MEDICAL DISCLAIMER */}
       <div className="bg-amber-50/90 border border-amber-300/80 rounded-2xl p-5 shadow-sm">
         <div className="flex items-start space-x-3">
           <ShieldAlert className="w-6 h-6 text-amber-600 flex-shrink-0 mt-0.5" />
@@ -178,14 +169,13 @@ export const Result = () => {
               Pernyataan Penyangkalan Medis (Medical Disclaimer)
             </h3>
             <p className="text-xs text-amber-800 leading-relaxed">
-              Hasil analisis di atas merupakan prediksi deteksi dini yang dihitung oleh model Graph Neural Network (GraphSAGE) berdasarkan faktor gaya hidup Anda. 
+              Hasil analisis di atas merupakan prediksi deteksi dini yang dihitung oleh model Graph Neural Network (GraphSAGE) berdasarkan faktor gaya hidup Anda.
               <b> Hasil ini bukan merupakan diagnosis medis resmi</b>. Untuk diagnosis klinis, konsultasikan secara langsung dengan dokter spesialis atau tenaga medis profesional.
             </p>
           </div>
         </div>
       </div>
 
-      {/* ACTION BUTTONS */}
       <div className="flex flex-col sm:flex-row items-center justify-center gap-4 pt-2">
         <Link
           to="/predict"

@@ -32,8 +32,7 @@ export const Navbar = () => {
     <nav className="bg-[#5dbb7d] text-white shadow-md sticky top-0 z-40">
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
         <div className="flex justify-between h-16 items-center">
-          
-          {/* Logo Figma & Brand */}
+
           <Link to="/" className="flex items-center space-x-2.5 sm:space-x-3">
             <div className="w-10 h-10 sm:w-11 sm:h-11 bg-white/20 rounded-xl flex items-center justify-center p-1 backdrop-blur-sm shadow-inner flex-shrink-0">
               <Logo className="w-8 h-8 sm:w-9 sm:h-9" />
@@ -43,7 +42,6 @@ export const Navbar = () => {
             </span>
           </Link>
 
-          {/* Desktop Nav Links (Hidden on Mobile) */}
           <div className="hidden md:flex items-center space-x-6 lg:space-x-8 text-sm font-medium">
             {navLinks.map((link) => (
               <Link
@@ -59,7 +57,6 @@ export const Navbar = () => {
               </Link>
             ))}
 
-            {/* Login Admin link */}
             <Link
               to={isAdmin ? "/admin/users" : "/admin/login"}
               className={`py-1 transition-all flex items-center gap-1 ${
@@ -71,10 +68,9 @@ export const Navbar = () => {
               Login Admin
             </Link>
 
-            {/* Notification Bell & User Menu */}
             <div className="flex items-center space-x-3 pl-3 border-l border-emerald-400/60">
               <NotificationBell />
-              
+
               {isAuthenticated && (
                 <div className="flex items-center space-x-2 ml-1">
                   <span className="text-xs font-semibold bg-emerald-700/50 px-2.5 py-1 rounded-full text-white truncate max-w-[110px]">
@@ -92,7 +88,6 @@ export const Navbar = () => {
             </div>
           </div>
 
-          {/* Mobile Right Controls: Bell + Hamburger Toggle */}
           <div className="flex items-center space-x-2 md:hidden">
             <NotificationBell />
             <button
@@ -107,10 +102,9 @@ export const Navbar = () => {
         </div>
       </div>
 
-      {/* Mobile Drawer Menu (Animasi slide-in untuk Layar HP/Android) */}
       {mobileMenuOpen && (
         <div className="md:hidden bg-[#4eaa6d] border-t border-emerald-400/60 px-4 pt-3 pb-5 space-y-2 text-sm shadow-xl animate-in slide-in-from-top-2 duration-200">
-          
+
           {navLinks.map((link) => {
             const Icon = link.icon;
             const active = isActive(link.path);

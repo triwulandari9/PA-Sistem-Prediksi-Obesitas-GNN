@@ -6,7 +6,7 @@ export const Footer = () => {
     <footer className="bg-white border-t border-slate-200 mt-auto">
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-10">
         <div className="grid grid-cols-1 md:grid-cols-3 gap-8 mb-8">
-          
+
           <div>
             <div className="flex items-center space-x-2.5 mb-3">
               <div className="w-8 h-8 rounded-lg bg-emerald-600 flex items-center justify-center text-white">
@@ -15,7 +15,7 @@ export const Footer = () => {
               <span className="font-bold text-slate-900 tracking-tight">Sistem GNN Obesitas</span>
             </div>
             <p className="text-sm text-slate-600 leading-relaxed">
-              Sistem prediksi tingkat risiko obesitas berbasis web menggunakan Graph Neural Network (GraphSAGE) 
+              Sistem prediksi tingkat risiko obesitas berbasis web menggunakan Graph Neural Network (GraphSAGE)
               sebagai sarana skrining dan deteksi dini pola hidup sehat.
             </p>
           </div>
@@ -36,7 +36,7 @@ export const Footer = () => {
               <div>
                 <h5 className="text-xs font-bold uppercase tracking-wider text-amber-800 mb-1">Medical Disclaimer</h5>
                 <p className="text-xs text-amber-700 leading-relaxed">
-                  Sistem ini adalah media skrining dan deteksi dini berbasis metode Graph Neural Network (GraphSAGE), 
+                  Sistem ini adalah media skrining dan deteksi dini berbasis metode Graph Neural Network (GraphSAGE),
                   <b> bukan merupakan pengganti diagnosis medis resmi</b>. Konsultasikan kondisi kesehatan dengan dokter atau ahli gizi berlisensi.
                 </p>
               </div>

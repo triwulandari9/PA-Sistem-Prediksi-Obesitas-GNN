@@ -7,7 +7,6 @@ export const AuthProvider = ({ children }) => {
   const [user, setUser] = useState(null);
   const [loading, setLoading] = useState(true);
 
-  // Inisialisasi session dari localStorage saat reload
   useEffect(() => {
     const savedUser = localStorage.getItem('pa_gnn_auth_user');
     if (savedUser) {
@@ -21,13 +20,12 @@ export const AuthProvider = ({ children }) => {
     setLoading(false);
   }, []);
 
-  // LOGIN MENGGUNAKAN NAMA PENGGUNA & KATA SANDI (SESUAI ERD)
   const login = async (username, password) => {
     const cleanUser = username.trim();
     const cleanUserLower = cleanUser.toLowerCase();
 
     if (isSupabaseConfigured && supabase) {
-      // 1. Cek di tabel 'admin' Supabase terlebih dahulu (Sesuai Entitas Admin di ERD)
+
       try {
         const { data: adminData } = await supabase
           .from('admin')
@@ -50,7 +48,6 @@ export const AuthProvider = ({ children }) => {
         console.warn('Cek tabel admin Supabase:', errAdmin.message);
       }
 
-      // 2. Cek di tabel 'pengguna' Supabase (Sesuai Entitas Pengguna di ERD)
       let userData = null;
       try {
         const { data: pData } = await supabase
@@ -71,7 +68,6 @@ export const AuthProvider = ({ children }) => {
         console.warn('Cek tabel pengguna:', ePengguna.message);
       }
 
-      // Fallback ke tabel 'profiles' jika belum di-rename
       if (!userData) {
         try {
           const { data: profData } = await supabase
@@ -98,7 +94,6 @@ export const AuthProvider = ({ children }) => {
       }
     }
 
-    // 3. Fallback Akun Admin Khusus (Jaga-jaga jika tabel belum di-create / offline)
     const isAdminAccount =
       (cleanUserLower === 'sari' && (password === '111111' || password === 'triwjsari09')) ||
       (cleanUserLower === 'sariadmin' && password === 'Saricomel9!') ||
@@ -116,7 +111,7 @@ export const AuthProvider = ({ children }) => {
     }
 
     if (!isSupabaseConfigured || !supabase) {
-      // Fallback ke Local DB jika Supabase belum terhubung
+
       const { data, error } = await localDb.signIn({ email: cleanUser, password });
       if (error) throw error;
       setUser(data.user);
@@ -127,12 +122,11 @@ export const AuthProvider = ({ children }) => {
     throw new Error('Nama Pengguna atau Kata Sandi salah. Silakan periksa kembali.');
   };
 
-  // REGISTER MENGGUNAKAN NAMA PENGGUNA & KATA SANDI (SESUAI ERD)
   const register = async (username, password, role = 'user') => {
     const cleanUser = username.trim();
 
     if (isSupabaseConfigured && supabase) {
-      // 1. Cek apakah Nama Pengguna sudah pernah didaftarkan
+
       let existingUser = null;
       try {
         const { data: exP } = await supabase
@@ -158,7 +152,6 @@ export const AuthProvider = ({ children }) => {
         throw new Error(`Nama Pengguna "${cleanUser}" sudah terdaftar. Silakan langsung login.`);
       }
 
-      // 2. Simpan ke tabel 'pengguna' (Sesuai ERD)
       let createdUser = null;
       try {
         const { data: newP, error: pErr } = await supabase
@@ -180,7 +173,6 @@ export const AuthProvider = ({ children }) => {
         }
       } catch (e) {}
 
-      // Fallback simpan ke 'profiles' jika belum di-rename
       if (!createdUser) {
         const { data: newProf, error: profErr } = await supabase
           .from('profiles')
@@ -217,7 +209,6 @@ export const AuthProvider = ({ children }) => {
     }
   };
 
-  // RESET / LUPA KATA SANDI (UPDATE PASSWORD DI SUPABASE)
   const resetPassword = async (username, newPassword) => {
     const cleanUser = username.trim();
 
@@ -255,7 +246,6 @@ export const AuthProvider = ({ children }) => {
     }
   };
 
-  // LOGOUT
   const logout = async () => {
     setUser(null);
     localStorage.removeItem('pa_gnn_auth_user');

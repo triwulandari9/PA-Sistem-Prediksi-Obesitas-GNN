@@ -49,10 +49,9 @@ export const AdminLogin = () => {
 
   return (
     <div className="min-h-screen bg-[#e8e8e8] flex items-center justify-center p-4 fade-in">
-      {/* Modal Card matching Figma Prototype */}
+
       <div className="w-full max-w-lg bg-[#f0f0f0] rounded-3xl shadow-xl p-8 sm:p-12 border border-slate-200/80">
-        
-        {/* Logo Center */}
+
         <div className="flex justify-center mb-4">
           <Logo className="w-16 h-16" />
         </div>
@@ -69,7 +68,7 @@ export const AdminLogin = () => {
         )}
 
         <form onSubmit={handleSubmit} className="space-y-5">
-          
+
           <div>
             <label className="block text-xs font-semibold text-slate-700 mb-1.5">
               Admin

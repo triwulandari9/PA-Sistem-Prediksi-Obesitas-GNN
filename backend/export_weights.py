@@ -25,7 +25,6 @@ print(f"Classes: {le.classes_}")
 print("\n[2/4] Formatting weights...")
 weights = {k: v.numpy().tolist() for k, v in state_dict.items()}
 
-# Scaler covers the 6 numeric features:
 num_cols = ['umur', 'kat_makan_sayur', 'jml_makan_utama', 'jml_konsum_air', 'frek_aktivitas_fisik', 'durasi_penggunaan_gadget']
 scaler_data = {
     'center': scaler.center_.tolist(),
@@ -33,7 +32,6 @@ scaler_data = {
     'num_cols': num_cols
 }
 
-# The 29 columns ordered exactly as in the trained model
 feature_order = [
     'umur', 'kat_makan_sayur', 'jml_makan_utama', 'jml_konsum_air', 'frek_aktivitas_fisik', 'durasi_penggunaan_gadget',
     'jenis_kelamin_Female', 'jenis_kelamin_Male',

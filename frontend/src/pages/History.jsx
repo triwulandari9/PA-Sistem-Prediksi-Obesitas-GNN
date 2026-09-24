@@ -10,7 +10,6 @@ export const History = () => {
   const [predictions, setPredictions] = useState([]);
   const [loading, setLoading] = useState(true);
 
-  // Modals state
   const [selectedPrediction, setSelectedPrediction] = useState(null);
   const [isDetailOpen, setIsDetailOpen] = useState(false);
   const [deleteTargetId, setDeleteTargetId] = useState(null);
@@ -111,7 +110,6 @@ export const History = () => {
     }
   };
 
-  // Format tanggal persis Figma: "Senin, 12 Januari 2026"
   const formatDate = (dateString) => {
     try {
       const d = new Date(dateString);
@@ -136,10 +134,9 @@ export const History = () => {
   return (
     <div className="min-h-[calc(100vh-64px)] bg-[#f4f4f4] py-8 sm:py-12 px-4 sm:px-6 lg:px-8 fade-in">
       <div className="max-w-4xl mx-auto">
-        
-        {/* KARTU PUTIH PERSIS FIGMA FRAME 9 */}
+
         <div className="bg-white rounded-2xl p-8 sm:p-10 shadow-lg border border-slate-100 min-h-[460px]">
-          
+
           <h1 className="text-xl sm:text-2xl font-bold text-center text-slate-800 mb-8">
             Riwayat Hasil Prediksi Anda
           </h1>
@@ -152,8 +149,7 @@ export const History = () => {
           ) : (
             <div className="overflow-x-auto rounded-xl border border-slate-100 shadow-sm">
               <table className="w-full text-left border-collapse text-xs sm:text-sm min-w-[500px]">
-                
-                {/* Header Hijau Sesuai Figma Frame 9 */}
+
                 <thead>
                   <tr className="bg-[#5dbb7d] text-white font-bold">
                     <th className="py-3.5 px-6 w-16 text-center">No</th>
@@ -218,14 +214,12 @@ export const History = () => {
 
       </div>
 
-      {/* DETAIL MODAL (14 FEATURES) */}
       <DetailPredictionModal
         isOpen={isDetailOpen}
         prediction={selectedPrediction}
         onClose={() => setIsDetailOpen(false)}
       />
 
-      {/* CONFIRM DELETE MODAL */}
       <ConfirmModal
         isOpen={isDeleteOpen}
         title="Hapus Riwayat Prediksi"

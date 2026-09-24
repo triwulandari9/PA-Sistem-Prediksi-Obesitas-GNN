@@ -7,7 +7,6 @@ export const AdminUsers = () => {
   const [users, setUsers] = useState([]);
   const [loading, setLoading] = useState(true);
 
-  // Delete modal state
   const [deleteTargetUser, setDeleteTargetUser] = useState(null);
   const [isDeleteOpen, setIsDeleteOpen] = useState(false);
   const [deleteLoading, setDeleteLoading] = useState(false);
@@ -104,7 +103,6 @@ export const AdminUsers = () => {
     }
   };
 
-  // Format tanggal persis Figma: "Senin, 12 Januari 2026"
   const formatDate = (dateString) => {
     try {
       const d = new Date(dateString);
@@ -121,10 +119,9 @@ export const AdminUsers = () => {
 
   return (
     <div className="space-y-4 fade-in">
-      
-      {/* KARTU PUTIH UTAMA PERSIS FIGMA SEMPRO */}
+
       <div className="bg-white rounded-2xl p-8 sm:p-10 shadow-lg border border-slate-100 min-h-[460px]">
-        
+
         <h1 className="text-xl sm:text-2xl font-bold text-slate-800 mb-8">
           Data Pengguna
         </h1>
@@ -137,8 +134,7 @@ export const AdminUsers = () => {
         ) : (
           <div className="overflow-x-auto rounded-xl border border-slate-100 shadow-sm">
             <table className="w-full text-left border-collapse text-xs sm:text-sm min-w-[500px]">
-              
-              {/* Header Hijau Sesuai Figma */}
+
               <thead>
                 <tr className="bg-[#5dbb7d] text-white font-bold">
                   <th className="py-3.5 px-6 w-16 text-center">No</th>
@@ -192,7 +188,6 @@ export const AdminUsers = () => {
 
       </div>
 
-      {/* CONFIRM DELETE MODAL */}
       <ConfirmModal
         isOpen={isDeleteOpen}
         title="Hapus Data Pengguna"

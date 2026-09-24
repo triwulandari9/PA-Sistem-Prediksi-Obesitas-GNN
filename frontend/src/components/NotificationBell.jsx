@@ -19,7 +19,7 @@ export const NotificationBell = () => {
 
   return (
     <div className="relative" ref={dropdownRef}>
-      {/* Tombol Lonceng */}
+
       <button
         onClick={() => {
           setIsOpen(!isOpen);
@@ -36,11 +36,9 @@ export const NotificationBell = () => {
         )}
       </button>
 
-      {/* Popover Dropdown Notifikasi */}
       {isOpen && (
         <div className="absolute right-0 mt-3 w-80 sm:w-96 bg-white rounded-2xl shadow-2xl border border-slate-200 overflow-hidden z-50 text-slate-800 text-xs animate-in">
-          
-          {/* Header Popover */}
+
           <div className="bg-[#5dbb7d] px-4 py-3 text-white flex items-center justify-between font-bold shadow-sm">
             <div className="flex items-center gap-1.5">
               <Sparkles className="w-4 h-4" />
@@ -60,7 +58,6 @@ export const NotificationBell = () => {
             </div>
           </div>
 
-          {/* List Notifikasi Riil */}
           <div className="max-h-72 overflow-y-auto divide-y divide-slate-100">
             {notifications.length === 0 ? (
               <div className="p-8 text-center text-slate-400">
@@ -92,7 +89,6 @@ export const NotificationBell = () => {
             )}
           </div>
 
-          {/* Footer Popover */}
           <div className="bg-slate-50 px-4 py-2 text-center text-[11px] text-slate-500 border-t border-slate-100">
             Sistem Prediksi Risiko Obesitas GNN
           </div>

@@ -9,7 +9,6 @@ export const Register = () => {
   const { user, register } = useAuth();
   const navigate = useNavigate();
 
-  // Jika sudah login sebagai Admin, kunci di panel admin
   React.useEffect(() => {
     if (user?.role === 'admin') {
       navigate('/admin/users', { replace: true });
@@ -63,16 +62,14 @@ export const Register = () => {
   };
 
   return (
-    <div 
+    <div
       className="min-h-screen flex items-center justify-center p-4 bg-cover bg-center bg-no-repeat relative"
       style={{ backgroundImage: `url(${bgImage})` }}
     >
       <div className="absolute inset-0 bg-slate-900/10 pointer-events-none"></div>
 
-      {/* Main Register Card matching Figma Prototype */}
       <div className="relative z-10 w-full max-w-lg bg-[#f2f2f2]/95 backdrop-blur-md rounded-3xl shadow-2xl p-8 sm:p-12 border border-white/60">
-        
-        {/* Logo Center */}
+
         <div className="flex justify-center mb-6">
           <Logo className="w-16 h-16" />
         </div>
@@ -85,7 +82,7 @@ export const Register = () => {
         )}
 
         <form onSubmit={handleSubmit} className="space-y-4">
-          
+
           <div>
             <label className="block text-xs font-semibold text-slate-700 mb-1.5">
               Nama Pengguna

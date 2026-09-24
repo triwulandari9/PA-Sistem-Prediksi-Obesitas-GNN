@@ -8,7 +8,6 @@ import { X, AlertCircle, Check, CheckCircle2 } from 'lucide-react';
 
 const API_BASE_URL = import.meta.env.VITE_API_BASE_URL || '';
 
-// Definisi Pilihan untuk Opsi Biner (Segmented Pills)
 const genderOptions = [
   { value: '0', label: 'Perempuan' },
   { value: '1', label: 'Laki-laki' }
@@ -19,7 +18,6 @@ const yesNoOptions = [
   { value: '0', label: 'Tidak' }
 ];
 
-// Komponen Pilihan Biner (Segmented Pill Style)
 const BinaryPillGroup = ({ label, name, value, options, onChange }) => (
   <div>
     <label className="block font-semibold text-slate-700 mb-1 text-[11px] sm:text-xs">
@@ -48,25 +46,23 @@ const BinaryPillGroup = ({ label, name, value, options, onChange }) => (
   </div>
 );
 
-// Semua kolom mulai dalam keadaan KOSONG / BELUM TERPILIH
 const initialFormState = {
-  umur: '',                     // Usia (Dewasa >= 18 tahun)
-  jenis_kelamin: '',            // 0: Perempuan, 1: Laki-laki
-  kat_konsum_alkohol: '',       // 3: Tidak, 2: Kadang, 1: Sering, 0: Selalu
-  kat_makan_sayur: '',          // 1: Tidak, 2: Kadang, 3: Selalu
-  frek_aktivitas_fisik: '',     // 0: 0h, 1: 1-2h, 2: 2-4h, 3: 4-5h
-  jml_konsum_air: '',           // 1: <1L, 2: 1-2L, 3: >2L
-  kat_merokok: '',              // 0: Tidak, 1: Ya
-  riwayat_obesitas: '',         // 0: Tidak, 1: Ya
-  kat_makan_berkalori: '',      // 0: Tidak, 1: Ya
-  jml_makan_utama: '',          // 1: 1-2x, 2: 3x, 3: >3x
-  monitoring_kalori: '',        // 0: Tidak, 1: Ya
-  kat_makan_cemilan: '',        // 3: Tidak, 2: Kadang, 1: Sering, 0: Selalu
-  durasi_penggunaan_gadget: '', // 0: 0-2j, 1: 3-5j, 2: >5j
-  jenis_transportasi: ''        // 0: Mobil, 1: Sepeda, 2: Motor, 3: Umum, 4: Jalan
+  umur: '',
+  jenis_kelamin: '',
+  kat_konsum_alkohol: '',
+  kat_makan_sayur: '',
+  frek_aktivitas_fisik: '',
+  jml_konsum_air: '',
+  kat_merokok: '',
+  riwayat_obesitas: '',
+  kat_makan_berkalori: '',
+  jml_makan_utama: '',
+  monitoring_kalori: '',
+  kat_makan_cemilan: '',
+  durasi_penggunaan_gadget: '',
+  jenis_transportasi: ''
 };
 
-// Dropdown Options Definition (Murni Bahasa Indonesia)
 const alcoholOptions = [
   { value: '3', label: 'Tidak minum' },
   { value: '2', label: 'Kadang-kadang' },
@@ -127,8 +123,7 @@ export const Predict = () => {
   const [formData, setFormData] = useState(initialFormState);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
-  
-  // Popup Result Modal State
+
   const [showResultModal, setShowResultModal] = useState(false);
   const [resultData, setResultData] = useState(null);
 
@@ -139,8 +134,7 @@ export const Predict = () => {
 
   const handleChange = (e) => {
     const { name, value } = e.target;
-    
-    // Validasi khusus usia: Hanya angka positif, tidak bisa minus (-), maksimal 120 tahun
+
     if (name === 'umur' || name === 'age') {
       const cleanAge = value.replace(/[^0-9]/g, '');
       if (cleanAge !== '' && Number(cleanAge) > 120) return;
@@ -170,7 +164,6 @@ export const Predict = () => {
   const handlePredict = async (e) => {
     e.preventDefault();
 
-    // 1. Cek Kelengkapan Usia
     const ageNum = Number(formData.umur);
     if (!formData.umur || isNaN(ageNum) || ageNum <= 0) {
       setError('Usia wajib diisi dengan angka valid!');
@@ -187,7 +180,6 @@ export const Predict = () => {
       return;
     }
 
-    // 2. Cek Kelengkapan Seluruh 14 Parameter
     const requiredKeys = [
       'jenis_kelamin', 'kat_konsum_alkohol', 'kat_makan_sayur', 'frek_aktivitas_fisik',
       'jml_konsum_air', 'kat_merokok', 'riwayat_obesitas', 'kat_makan_berkalori',
@@ -221,8 +213,8 @@ export const Predict = () => {
     };
 
     try {
-      // 1. Panggil Flask REST API
-      const res = await axios.post(`${API_BASE_URL}/api/predict`, payload, { 
+
+      const res = await axios.post(`${API_BASE_URL}/api/predict`, payload, {
         timeout: 15000,
         headers: {
           'Content-Type': 'application/json'
@@ -236,20 +228,19 @@ export const Predict = () => {
       const predictionResult = res.data;
       setResultData(predictionResult);
 
-      // 2. Simpan ke database Supabase (Murni Bahasa Indonesia sesuai ERD)
       const recordToSave = {
         pengguna_id: user?.id || 'guest',
         ...payload,
-        hasil_prediksi: predictionResult.risk_level, // 'Rendah', 'Sedang', 'Tinggi'
+        hasil_prediksi: predictionResult.risk_level,
         probabilities: predictionResult.probabilities,
         recommendations: predictionResult.recommendations,
       };
 
       if (isSupabaseConfigured && supabase && user?.id) {
-        // Coba insert ke tabel resmi 'prediksi_risiko'
+
         const { error: errPR } = await supabase.from('prediksi_risiko').insert([recordToSave]);
         if (errPR) {
-          // Fallback ke tabel 'predictions' jika belum di-rename di Supabase
+
           await supabase.from('predictions').insert([{
             user_id: user.id,
             ...payload,
@@ -262,14 +253,12 @@ export const Predict = () => {
         await localDb.savePrediction(recordToSave);
       }
 
-      // 3. Tambahkan Notifikasi Riil ke Sistem
       addNotification({
         title: 'Deteksi Risiko Selesai',
         message: `Hasil analisis model GraphSAGE (GNN): Tingkat Risiko Obesitas Anda ${predictionResult.risk_level}.`,
         type: 'prediction'
       });
 
-      // 4. Tampilkan popup modal hasil
       setShowResultModal(true);
 
     } catch (err) {
@@ -286,17 +275,15 @@ export const Predict = () => {
     }
   };
 
-  // Tutup Modal dan Reset Formulir Menjadi Bersih
   const handleCloseModal = () => {
     setShowResultModal(false);
     setFormData(initialFormState);
     setError('');
   };
 
-  // Modal Theme Styling Sesuai Figma
   const getModalTheme = () => {
     const risk = (resultData?.risk_level || resultData?.prediction || '').toUpperCase();
-    
+
     if (risk.includes('RENDAH') || risk.includes('LOW')) {
       return {
         headerBg: 'bg-[#5dbb7d]',
@@ -319,7 +306,6 @@ export const Predict = () => {
       };
     }
 
-    // Sedang (Medium) Sesuai Screenshot Figma
     return {
       headerBg: 'bg-[#f1c40f]',
       icon: '⚠️',
@@ -334,15 +320,12 @@ export const Predict = () => {
 
   return (
     <div className="min-h-[calc(100vh-64px)] bg-gradient-to-br from-slate-50 via-[#f4f7f5] to-emerald-50/40 flex items-center justify-center p-3 sm:p-5 fade-in relative overflow-hidden">
-      
-      {/* Elemen Ambient Glow Halus di Sudut Latar Belakang */}
+
       <div className="pointer-events-none absolute -top-28 -right-28 w-96 h-96 bg-emerald-200/25 rounded-full blur-3xl" />
       <div className="pointer-events-none absolute -bottom-28 -left-28 w-96 h-96 bg-teal-200/20 rounded-full blur-3xl" />
 
-      {/* FORM CARD ELEGAN PAS 1 LAYAR (ZERO SCROLL) */}
       <div className="max-w-4xl w-full bg-white/95 backdrop-blur-md rounded-3xl shadow-[0_20px_50px_rgba(8,112,184,0.06),0_8px_20px_rgba(0,0,0,0.03)] border border-emerald-100/70 px-6 py-5 sm:px-10 sm:py-6 relative z-10">
-        
-        {/* Header Formulir & Progress Status */}
+
         <div className="text-center mb-4">
           <div className="inline-flex items-center gap-2 px-3 py-0.5 rounded-full bg-emerald-50 border border-emerald-200/60 text-emerald-800 text-[11px] font-semibold mb-1 shadow-sm">
             <span className="w-2 h-2 rounded-full bg-[#5dbb7d] animate-pulse"></span>
@@ -354,7 +337,7 @@ export const Predict = () => {
           <div className="mt-1.5 flex items-center justify-center gap-2.5 text-xs text-slate-500">
             <span>Kelengkapan:</span>
             <div className="w-24 bg-slate-200/80 rounded-full h-1.5 overflow-hidden">
-              <div 
+              <div
                 className="bg-[#5dbb7d] h-full rounded-full transition-all duration-300"
                 style={{ width: `${progressPercent}%` }}
               />
@@ -377,11 +360,9 @@ export const Predict = () => {
 
         <form onSubmit={handlePredict}>
           <div className="grid grid-cols-1 md:grid-cols-2 gap-x-10 gap-y-2.5 text-xs text-slate-800">
-            
-            {/* KOLOM KIRI */}
+
             <div className="space-y-2.5">
-              
-              {/* 1. Usia (Dewasa: 18 - 120 tahun) */}
+
               <div>
                 <label className="block font-semibold text-slate-700 mb-1 text-[11px] sm:text-xs">
                   Usia <span className="font-normal text-slate-500">(Tahun)</span>
@@ -409,7 +390,6 @@ export const Predict = () => {
                 </div>
               </div>
 
-              {/* 2. Jenis Kelamin (Segmented Pill) */}
               <BinaryPillGroup
                 label="Jenis Kelamin"
                 name="jenis_kelamin"
@@ -418,7 +398,6 @@ export const Predict = () => {
                 onChange={handlePillChange}
               />
 
-              {/* 3. Konsumsi Alkohol? (Custom Dropdown) */}
               <div>
                 <label className="block font-semibold text-slate-700 mb-1 text-[11px] sm:text-xs">Konsumsi Alkohol?</label>
                 <CustomSelect
@@ -429,7 +408,6 @@ export const Predict = () => {
                 />
               </div>
 
-              {/* 4. Makan Sayuran? (Custom Dropdown) */}
               <div>
                 <label className="block font-semibold text-slate-700 mb-1 text-[11px] sm:text-xs">Makan Sayuran?</label>
                 <CustomSelect
@@ -440,7 +418,6 @@ export const Predict = () => {
                 />
               </div>
 
-              {/* 5. Aktivitas Fisik? (Custom Dropdown) */}
               <div>
                 <label className="block font-semibold text-slate-700 mb-1 text-[11px] sm:text-xs">Aktivitas Fisik? (per minggu)</label>
                 <CustomSelect
@@ -451,7 +428,6 @@ export const Predict = () => {
                 />
               </div>
 
-              {/* 6. Konsumsi Air? (Custom Dropdown) */}
               <div>
                 <label className="block font-semibold text-slate-700 mb-1 text-[11px] sm:text-xs">Konsumsi Air? (Liter/hari)</label>
                 <CustomSelect
@@ -463,7 +439,6 @@ export const Predict = () => {
                 />
               </div>
 
-              {/* 7. Pernah Merokok? (Segmented Pill) */}
               <BinaryPillGroup
                 label="Pernah Merokok?"
                 name="kat_merokok"
@@ -474,10 +449,8 @@ export const Predict = () => {
 
             </div>
 
-            {/* KOLOM KANAN */}
             <div className="space-y-2.5">
-              
-              {/* 8. Riwayat Keluarga Obesitas? (Segmented Pill) */}
+
               <BinaryPillGroup
                 label="Riwayat Keluarga Obesitas?"
                 name="riwayat_obesitas"
@@ -486,7 +459,6 @@ export const Predict = () => {
                 onChange={handlePillChange}
               />
 
-              {/* 9. Sering Makan Berkalori Tinggi? (Segmented Pill) */}
               <BinaryPillGroup
                 label="Sering Makan Berkalori Tinggi?"
                 name="kat_makan_berkalori"
@@ -495,7 +467,6 @@ export const Predict = () => {
                 onChange={handlePillChange}
               />
 
-              {/* 10. Frekuensi Makan Utama? (Custom Dropdown) */}
               <div>
                 <label className="block font-semibold text-slate-700 mb-1 text-[11px] sm:text-xs">Frekuensi Makan Utama?</label>
                 <CustomSelect
@@ -506,7 +477,6 @@ export const Predict = () => {
                 />
               </div>
 
-              {/* 11. Memantau Kalori? (Segmented Pill) */}
               <BinaryPillGroup
                 label="Memantau Kalori?"
                 name="monitoring_kalori"
@@ -515,7 +485,6 @@ export const Predict = () => {
                 onChange={handlePillChange}
               />
 
-              {/* 12. Makan diluar jam makan (ngemil) (Custom Dropdown) */}
               <div>
                 <label className="block font-semibold text-slate-700 mb-1 text-[11px] sm:text-xs">Makan diluar jam makan (ngemil)</label>
                 <CustomSelect
@@ -527,7 +496,6 @@ export const Predict = () => {
                 />
               </div>
 
-              {/* 13. Durasi Gadget? (jam/hari) (Custom Dropdown) */}
               <div>
                 <label className="block font-semibold text-slate-700 mb-1 text-[11px] sm:text-xs">Durasi Gadget? (jam/hari)</label>
                 <CustomSelect
@@ -539,7 +507,6 @@ export const Predict = () => {
                 />
               </div>
 
-              {/* 14. Transportasi? (Custom Dropdown) */}
               <div>
                 <label className="block font-semibold text-slate-700 mb-1 text-[11px] sm:text-xs">Transportasi Sehari-hari?</label>
                 <CustomSelect
@@ -555,7 +522,6 @@ export const Predict = () => {
 
           </div>
 
-          {/* Tombol Prediksi Center Pas di Layar */}
           <div className="text-center mt-5">
             <button
               type="submit"
@@ -580,12 +546,10 @@ export const Predict = () => {
 
       </div>
 
-      {/* POPUP MODAL HASIL PREDIKSI (PERSIS SESUAI PROPOSAL DENGAN TAMPILAN LEBIH BERSIH DAN ELEGAN) */}
       {showResultModal && resultData && (
         <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-900/60 backdrop-blur-sm fade-in">
           <div className="w-full max-w-lg bg-white rounded-3xl shadow-2xl overflow-hidden border border-slate-100 transform transition-all animate-in">
-            
-            {/* Header Modal Berwarna (Kuning = Sedang, Hijau = Rendah, Merah = Tinggi) */}
+
             <div className={`${modalTheme.headerBg} px-6 py-4 text-white flex items-center justify-between font-bold text-sm shadow-sm`}>
               <span className="tracking-wide">Hasil Analisis Risiko Obesitas</span>
               <button
@@ -598,10 +562,8 @@ export const Predict = () => {
               </button>
             </div>
 
-            {/* Modal Body */}
             <div className="p-6 sm:p-7 space-y-4">
-              
-              {/* Icon & Title */}
+
               <div className="flex items-center space-x-3.5">
                 <div className="text-4xl flex-shrink-0 p-2.5 rounded-2xl bg-slate-50 border border-slate-100 shadow-sm">
                   {modalTheme.icon}
@@ -616,12 +578,10 @@ export const Predict = () => {
                 </div>
               </div>
 
-              {/* Description explanation */}
               <div className="p-3.5 rounded-2xl bg-slate-50/80 border border-slate-100 text-slate-600 text-xs sm:text-sm leading-relaxed text-justify">
                 {modalTheme.text}
               </div>
 
-              {/* Probabilities breakdown with visual progress bars */}
               {resultData.probabilities && (
                 <div className="p-3.5 bg-slate-50/60 rounded-2xl border border-slate-100 space-y-2">
                   <div className="flex items-center justify-between text-xs font-bold text-slate-700">
@@ -653,7 +613,6 @@ export const Predict = () => {
                 </div>
               )}
 
-              {/* Recommendations if any */}
               {resultData.recommendations && resultData.recommendations.length > 0 && (
                 <div className="p-3.5 bg-emerald-50/60 rounded-2xl border border-emerald-100 space-y-1.5">
                   <p className="text-xs font-bold text-emerald-900 flex items-center gap-1.5">
@@ -668,7 +627,6 @@ export const Predict = () => {
                 </div>
               )}
 
-              {/* Tombol Tutup */}
               <div className="pt-2 flex justify-center">
                 <button
                   type="button"

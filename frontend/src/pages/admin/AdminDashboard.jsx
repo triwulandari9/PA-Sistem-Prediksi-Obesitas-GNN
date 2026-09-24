@@ -2,13 +2,13 @@ import React, { useState, useEffect } from 'react';
 import { Link } from 'react-router-dom';
 import { supabase, isSupabaseConfigured, localDb } from '../../lib/supabase';
 import { RiskBadge } from '../../components/RiskBadge';
-import { 
-  Users, 
-  FileSpreadsheet, 
-  ShieldCheck, 
-  AlertTriangle, 
-  AlertOctagon, 
-  Activity, 
+import {
+  Users,
+  FileSpreadsheet,
+  ShieldCheck,
+  AlertTriangle,
+  AlertOctagon,
+  Activity,
   ArrowRight,
   TrendingUp,
   Clock
@@ -32,7 +32,7 @@ export const AdminDashboard = () => {
       let predsList = [];
 
       if (isSupabaseConfigured && supabase) {
-        // Users
+
         let usersData = null;
         try {
           const resP = await supabase.from('pengguna').select('pengguna_id, pengguna_nama');
@@ -44,7 +44,6 @@ export const AdminDashboard = () => {
         }
         usersList = usersData;
 
-        // Predictions
         let predsData = null;
         try {
           const resPR = await supabase.from('prediksi_risiko').select('*, pengguna(pengguna_nama)').order('tgl_prediksi', { ascending: false });
@@ -75,7 +74,6 @@ export const AdminDashboard = () => {
         predsList = await localDb.getAllPredictions();
       }
 
-      // Count risk categories
       let low = 0, med = 0, high = 0;
       predsList.forEach(p => {
         const risk = (p.prediction || p.risk_level || '').toUpperCase();
@@ -112,8 +110,7 @@ export const AdminDashboard = () => {
 
   return (
     <div className="space-y-8 fade-in">
-      
-      {/* Page Title */}
+
       <div>
         <h1 className="text-2xl font-extrabold text-slate-900 tracking-tight">Ringkasan Dashboard Sistem</h1>
         <p className="text-xs text-slate-500 mt-1">
@@ -121,10 +118,8 @@ export const AdminDashboard = () => {
         </p>
       </div>
 
-      {/* STATS CARDS GRID */}
       <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-5 gap-4">
-        
-        {/* Total Users */}
+
         <div className="bg-white p-5 rounded-2xl border border-slate-200 shadow-sm flex flex-col justify-between">
           <div className="flex items-center justify-between text-slate-500 mb-3">
             <span className="text-xs font-bold uppercase tracking-wider">Total Pengguna</span>
@@ -138,7 +133,6 @@ export const AdminDashboard = () => {
           </div>
         </div>
 
-        {/* Total Predictions */}
         <div className="bg-white p-5 rounded-2xl border border-slate-200 shadow-sm flex flex-col justify-between">
           <div className="flex items-center justify-between text-slate-500 mb-3">
             <span className="text-xs font-bold uppercase tracking-wider">Total Prediksi</span>
@@ -152,7 +146,6 @@ export const AdminDashboard = () => {
           </div>
         </div>
 
-        {/* Low Risk */}
         <div className="bg-white p-5 rounded-2xl border border-emerald-200 shadow-sm flex flex-col justify-between">
           <div className="flex items-center justify-between text-emerald-800 mb-3">
             <span className="text-xs font-bold uppercase tracking-wider">Risiko Rendah</span>
@@ -166,7 +159,6 @@ export const AdminDashboard = () => {
           </div>
         </div>
 
-        {/* Medium Risk */}
         <div className="bg-white p-5 rounded-2xl border border-amber-200 shadow-sm flex flex-col justify-between">
           <div className="flex items-center justify-between text-amber-800 mb-3">
             <span className="text-xs font-bold uppercase tracking-wider">Risiko Sedang</span>
@@ -180,7 +172,6 @@ export const AdminDashboard = () => {
           </div>
         </div>
 
-        {/* High Risk */}
         <div className="bg-white p-5 rounded-2xl border border-rose-200 shadow-sm flex flex-col justify-between">
           <div className="flex items-center justify-between text-rose-800 mb-3">
             <span className="text-xs font-bold uppercase tracking-wider">Risiko Tinggi</span>
@@ -196,7 +187,6 @@ export const AdminDashboard = () => {
 
       </div>
 
-      {/* DISTRIBUTION BAR */}
       <div className="bg-white p-6 rounded-3xl border border-slate-200 shadow-sm space-y-4">
         <div className="flex items-center justify-between">
           <h2 className="text-sm font-bold text-slate-900 flex items-center gap-2">
@@ -206,20 +196,19 @@ export const AdminDashboard = () => {
           <span className="text-xs text-slate-500 font-medium">Total: {stats.totalPredictions} Prediksi</span>
         </div>
 
-        {/* Multi-segmented Progress bar */}
         <div className="h-4 w-full bg-slate-100 rounded-full overflow-hidden flex shadow-inner">
-          <div 
-            style={{ width: `${getPercentage(stats.lowRiskCount)}%` }} 
+          <div
+            style={{ width: `${getPercentage(stats.lowRiskCount)}%` }}
             className="bg-emerald-500 transition-all duration-500"
             title={`Rendah: ${stats.lowRiskCount} (${getPercentage(stats.lowRiskCount)}%)`}
           ></div>
-          <div 
-            style={{ width: `${getPercentage(stats.mediumRiskCount)}%` }} 
+          <div
+            style={{ width: `${getPercentage(stats.mediumRiskCount)}%` }}
             className="bg-amber-400 transition-all duration-500"
             title={`Sedang: ${stats.mediumRiskCount} (${getPercentage(stats.mediumRiskCount)}%)`}
           ></div>
-          <div 
-            style={{ width: `${getPercentage(stats.highRiskCount)}%` }} 
+          <div
+            style={{ width: `${getPercentage(stats.highRiskCount)}%` }}
             className="bg-rose-500 transition-all duration-500"
             title={`Tinggi: ${stats.highRiskCount} (${getPercentage(stats.highRiskCount)}%)`}
           ></div>
@@ -241,7 +230,6 @@ export const AdminDashboard = () => {
         </div>
       </div>
 
-      {/* RECENT PREDICTIONS TABLE */}
       <div className="bg-white rounded-3xl border border-slate-200 shadow-sm overflow-hidden">
         <div className="p-6 border-b border-slate-100 flex items-center justify-between">
           <div>

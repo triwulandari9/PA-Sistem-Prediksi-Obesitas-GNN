@@ -24,12 +24,10 @@ export const AdminLayout = () => {
   return (
     <div className="min-h-screen bg-[#fcfcfc] flex flex-col font-sans">
 
-      {/* 1. TOP HEADER BAR SESUAI FIGMA SEMPRO */}
       <header className="bg-[#5dbb7d] text-white shadow-sm sticky top-0 z-40">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-10">
           <div className="flex justify-between h-16 items-center">
 
-            {/* Logo Kiri */}
             <div className="flex items-center space-x-3">
               <div className="w-10 h-10 sm:w-11 sm:h-11 flex items-center justify-center">
                 <Logo className="w-8 h-8 sm:w-10 sm:h-10" />
@@ -39,7 +37,6 @@ export const AdminLayout = () => {
               </span>
             </div>
 
-            {/* Logout & Notification Bell Kanan */}
             <div className="flex items-center space-x-4 sm:space-x-6 text-xs sm:text-sm font-semibold">
               <button
                 onClick={handleLogout}
@@ -48,7 +45,6 @@ export const AdminLayout = () => {
                 Logout
               </button>
 
-              {/* Lonceng Notifikasi Interaktif */}
               <NotificationBell />
             </div>
 
@@ -56,10 +52,8 @@ export const AdminLayout = () => {
         </div>
       </header>
 
-      {/* 2. BODY DENGAN GARIS PEMISAH VERTIKAL PERSIS FIGMA */}
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-10 w-full flex-1 flex flex-col md:flex-row">
 
-        {/* SIDEBAR DENGAN TAMPILAN RESPONSIVE (HORIZONTAL DI HP, VERTIKAL DI DESKTOP) */}
         <aside className="w-full md:w-48 py-4 md:py-8 md:pr-6 md:border-r md:border-slate-200 flex-shrink-0 border-b md:border-b-0 border-slate-100">
           <div className="flex md:flex-col gap-2">
             {navItems.map((item) => {
@@ -80,7 +74,6 @@ export const AdminLayout = () => {
           </div>
         </aside>
 
-        {/* CONTENT UTAMA DI KANAN */}
         <main className="flex-1 py-6 md:py-8 md:pl-10">
           <Outlet />
         </main>

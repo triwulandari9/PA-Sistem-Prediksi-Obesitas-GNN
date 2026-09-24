@@ -34,7 +34,6 @@ export const RiskBadge = ({ risk, showIcon = true, size = 'md' }) => {
     );
   }
 
-  // High
   return (
     <span className={`inline-flex items-center gap-1.5 rounded-full bg-rose-100 text-rose-800 border border-rose-300 ${sizeClasses[size]}`}>
       {showIcon && <AlertOctagon className={`${iconSizes[size]} text-rose-600`} />}

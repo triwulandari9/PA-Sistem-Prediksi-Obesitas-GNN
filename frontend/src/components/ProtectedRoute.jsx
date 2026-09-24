@@ -17,7 +17,6 @@ export const ProtectedRoute = ({ children, allowedRoles = [] }) => {
     );
   }
 
-  // 1. Jika Belum Login
   if (!user) {
     if (location.pathname.startsWith('/admin')) {
       return <Navigate to="/admin/login" state={{ from: location }} replace />;
@@ -27,19 +26,16 @@ export const ProtectedRoute = ({ children, allowedRoles = [] }) => {
 
   const userRole = user.role || 'user';
 
-  // 2. KEAMANAN KETAT ADMIN: Jika sudah login sebagai Admin, TIDAK BISA kembali ke halaman pengguna!
   if (userRole === 'admin') {
     if (!location.pathname.startsWith('/admin')) {
       return <Navigate to="/admin/users" replace />;
     }
   }
 
-  // 3. KEAMANAN PENGGUNA BIASA: Pengguna biasa tidak bisa masuk ke panel admin
   if (userRole !== 'admin' && location.pathname.startsWith('/admin')) {
     return <Navigate to="/admin/login" replace />;
   }
 
-  // 4. Role checking umum
   if (allowedRoles.length > 0 && !allowedRoles.includes(userRole)) {
     if (userRole === 'admin') {
       return <Navigate to="/admin/users" replace />;

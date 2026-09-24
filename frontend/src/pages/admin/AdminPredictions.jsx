@@ -8,7 +8,6 @@ export const AdminPredictions = () => {
   const [predictions, setPredictions] = useState([]);
   const [loading, setLoading] = useState(true);
 
-  // Modals state
   const [selectedPrediction, setSelectedPrediction] = useState(null);
   const [isDetailOpen, setIsDetailOpen] = useState(false);
   const [deleteTargetId, setDeleteTargetId] = useState(null);
@@ -113,7 +112,6 @@ export const AdminPredictions = () => {
     }
   };
 
-  // Format tanggal persis Figma: "Senin, 12 Januari 2026"
   const formatDate = (dateString) => {
     try {
       const d = new Date(dateString);
@@ -137,10 +135,9 @@ export const AdminPredictions = () => {
 
   return (
     <div className="space-y-4 fade-in">
-      
-      {/* KARTU PUTIH UTAMA PERSIS FIGMA SEMPRO */}
+
       <div className="bg-white rounded-2xl p-8 sm:p-10 shadow-lg border border-slate-100 min-h-[460px]">
-        
+
         <h1 className="text-xl sm:text-2xl font-bold text-slate-800 mb-8">
           Data Prediksi
         </h1>
@@ -153,8 +150,7 @@ export const AdminPredictions = () => {
         ) : (
           <div className="overflow-x-auto rounded-xl border border-slate-100 shadow-sm">
             <table className="w-full text-left border-collapse text-xs sm:text-sm min-w-[650px]">
-              
-              {/* Header Hijau Sesuai Figma */}
+
               <thead>
                 <tr className="bg-[#5dbb7d] text-white font-bold">
                   <th className="py-3.5 px-6 w-16 text-center">No</th>
@@ -222,14 +218,12 @@ export const AdminPredictions = () => {
 
       </div>
 
-      {/* DETAIL MODAL (14 FEATURES) */}
       <DetailPredictionModal
         isOpen={isDetailOpen}
         prediction={selectedPrediction}
         onClose={() => setIsDetailOpen(false)}
       />
 
-      {/* CONFIRM DELETE MODAL */}
       <ConfirmModal
         isOpen={isDeleteOpen}
         title="Hapus Data Prediksi"

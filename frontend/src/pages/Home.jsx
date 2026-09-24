@@ -1,16 +1,16 @@
 import React from 'react';
 import { Link } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
-import { 
-  ArrowRight, 
-  ShieldCheck, 
-  HeartPulse, 
-  Activity, 
-  Sparkles, 
-  BrainCircuit, 
-  Apple, 
-  Flame, 
-  CheckCircle2, 
+import {
+  ArrowRight,
+  ShieldCheck,
+  HeartPulse,
+  Activity,
+  Sparkles,
+  BrainCircuit,
+  Apple,
+  Flame,
+  CheckCircle2,
   Scale
 } from 'lucide-react';
 
@@ -20,11 +20,9 @@ export const Home = () => {
   return (
     <div className="min-h-[calc(100vh-64px)] bg-[#f4f4f4] py-8 sm:py-12 px-4 sm:px-6 lg:px-8 fade-in">
       <div className="max-w-5xl mx-auto space-y-8">
-        
-        {/* HERO SECTION / BANNER SAMBUTAN */}
+
         <div className="bg-gradient-to-r from-[#5dbb7d] to-[#45a366] rounded-3xl p-6 sm:p-8 text-white shadow-xl shadow-emerald-700/10 flex flex-col md:flex-row items-center justify-between gap-6 relative overflow-hidden">
-          
-          {/* Background subtle graphic glow */}
+
           <div className="absolute -right-10 -bottom-10 w-48 h-48 bg-white/10 rounded-full blur-2xl pointer-events-none"></div>
 
           <div className="space-y-2 text-center md:text-left z-10">
@@ -52,10 +50,8 @@ export const Home = () => {
 
         </div>
 
-        {/* 2x2 GRID CARDS DENGAN PENYEMPURNAAN VISUAL DARI FIGMA */}
         <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-          
-          {/* Card 1: Pahami Risiko Obesitas Anda */}
+
           <div className="bg-white rounded-3xl p-7 sm:p-8 shadow-md hover:shadow-xl transition-all border border-slate-100 flex flex-col justify-between group">
             <div>
               <div className="w-12 h-12 rounded-2xl bg-emerald-50 text-[#5dbb7d] flex items-center justify-center mb-5 group-hover:scale-110 transition-transform">
@@ -83,7 +79,6 @@ export const Home = () => {
             </div>
           </div>
 
-          {/* Card 2: Apa itu Obesitas? */}
           <div className="bg-white rounded-3xl p-7 sm:p-8 shadow-md hover:shadow-xl transition-all border border-slate-100 flex flex-col justify-between group">
             <div>
               <div className="w-12 h-12 rounded-2xl bg-amber-50 text-amber-500 flex items-center justify-center mb-5 group-hover:scale-110 transition-transform">
@@ -96,7 +91,6 @@ export const Home = () => {
                 Obesitas didefinisikan oleh Organisasi Kesehatan Dunia (WHO) sebagai penumpukan lemak berlebih yang disebabkan oleh ketidakseimbangan antara kalori yang masuk dan kalori yang dibakar oleh tubuh.
               </p>
 
-              {/* Mini Info Pills */}
               <div className="grid grid-cols-2 gap-2 text-[11px]">
                 <div className="bg-slate-50 p-2.5 rounded-xl border border-slate-100">
                   <span className="text-slate-400 font-semibold block">Kategori Rendah</span>
@@ -115,7 +109,6 @@ export const Home = () => {
             </div>
           </div>
 
-          {/* Card 3: Cegah Diri Anda dari Obesitas */}
           <div className="bg-white rounded-3xl p-7 sm:p-8 shadow-md hover:shadow-xl transition-all border border-slate-100 flex flex-col justify-between group">
             <div>
               <div className="w-12 h-12 rounded-2xl bg-teal-50 text-teal-600 flex items-center justify-center mb-5 group-hover:scale-110 transition-transform">
@@ -128,7 +121,6 @@ export const Home = () => {
                 Tiga pilar utama dalam pencegahan obesitas dan pemeliharaan gaya hidup sehat yang berkelanjutan:
               </p>
 
-              {/* Health Interactive Visual Strip */}
               <div className="grid grid-cols-3 gap-2.5 text-center">
                 <div className="bg-emerald-50/70 border border-emerald-100 rounded-2xl p-3 text-emerald-800">
                   <Activity className="w-5 h-5 mx-auto mb-1 text-[#5dbb7d]" />
@@ -153,7 +145,6 @@ export const Home = () => {
             </div>
           </div>
 
-          {/* Card 4: Bagaimana Kami Memprediksi? */}
           <div className="bg-white rounded-3xl p-7 sm:p-8 shadow-md hover:shadow-xl transition-all border border-slate-100 flex flex-col justify-between group">
             <div>
               <div className="w-12 h-12 rounded-2xl bg-indigo-50 text-indigo-600 flex items-center justify-center mb-5 group-hover:scale-110 transition-transform">
@@ -166,7 +157,6 @@ export const Home = () => {
                 Sistem memanfaatkan arsitektur <strong className="text-slate-800 font-bold">Graph Neural Network (GraphSAGE 4-Layer)</strong> untuk memetakan hubungan non-linear antar 14 indikator gaya hidup Anda.
               </p>
 
-              {/* 3 Output Badges */}
               <div className="space-y-2">
                 <span className="text-[10px] uppercase font-bold text-slate-400 tracking-wider block">
                   3 Kategori Output Model:

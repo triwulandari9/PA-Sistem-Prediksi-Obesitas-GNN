@@ -10,7 +10,6 @@ export const Login = () => {
   const navigate = useNavigate();
   const location = useLocation();
 
-  // Jika sudah login sebagai Admin, kunci di panel admin
   React.useEffect(() => {
     if (user?.role === 'admin') {
       navigate('/admin/users', { replace: true });
@@ -24,7 +23,6 @@ export const Login = () => {
   const [error, setError] = useState('');
   const [loading, setLoading] = useState(false);
 
-  // Forgot Password Modal State
   const [isForgotOpen, setIsForgotOpen] = useState(false);
   const [forgotData, setForgotData] = useState({
     username: '',
@@ -109,17 +107,15 @@ export const Login = () => {
   };
 
   return (
-    <div 
+    <div
       className="min-h-screen flex items-center justify-center p-4 bg-cover bg-center bg-no-repeat relative"
       style={{ backgroundImage: `url(${bgImage})` }}
     >
-      {/* Subtle overlay */}
+
       <div className="absolute inset-0 bg-slate-900/10 pointer-events-none"></div>
 
-      {/* Main Split Card matching Figma Prototype */}
       <div className="relative z-10 w-full max-w-4xl bg-white/95 backdrop-blur-md rounded-3xl shadow-2xl overflow-hidden grid grid-cols-1 md:grid-cols-2 border border-white/60">
-        
-        {/* Left Green Banner */}
+
         <div className="bg-[#5dbb7d] p-8 sm:p-12 text-white flex flex-col justify-center space-y-6">
           <h1 className="text-3xl sm:text-4xl font-extrabold tracking-tight leading-tight">
             Selamat<br />Datang
@@ -129,10 +125,8 @@ export const Login = () => {
           </p>
         </div>
 
-        {/* Right Form Container */}
         <div className="p-8 sm:p-12 flex flex-col justify-center bg-[#f2f2f2]">
-          
-          {/* Logo Center */}
+
           <div className="flex justify-center mb-6">
             <Logo className="w-16 h-16" />
           </div>
@@ -145,7 +139,7 @@ export const Login = () => {
           )}
 
           <form onSubmit={handleSubmit} className="space-y-4">
-            
+
             <div>
               <label className="block text-xs font-semibold text-slate-700 mb-1.5">
                 Nama Pengguna
@@ -208,11 +202,10 @@ export const Login = () => {
 
       </div>
 
-      {/* MODAL LUPA KATA SANDI */}
       {isForgotOpen && (
         <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-900/50 backdrop-blur-sm fade-in">
           <div className="w-full max-w-md bg-white rounded-3xl shadow-2xl p-6 sm:p-8 border border-slate-100 animate-in relative">
-            
+
             <button
               onClick={() => {
                 setIsForgotOpen(false);

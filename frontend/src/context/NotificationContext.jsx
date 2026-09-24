@@ -27,10 +27,8 @@ export const NotificationProvider = ({ children }) => {
     ];
   });
 
-  // State untuk Toast Banner Pop-up otomatis di layar
   const [activeToast, setActiveToast] = useState(null);
 
-  // Simpan ke localStorage setiap kali notifications berubah
   useEffect(() => {
     if (user?.id) {
       try {
@@ -41,7 +39,6 @@ export const NotificationProvider = ({ children }) => {
     }
   }, [notifications, user]);
 
-  // Tambah notifikasi baru secara dinamis & Tampilkan Toast langsung di layar
   const addNotification = ({ title, message, type = 'info' }) => {
     const newNotif = {
       id: 'notif-' + Date.now(),
@@ -55,7 +52,6 @@ export const NotificationProvider = ({ children }) => {
 
     setNotifications(prev => [newNotif, ...prev]);
 
-    // Munculkan Toast Alert di pojok kanan atas layar selama 4 detik
     setActiveToast(newNotif);
     setTimeout(() => {
       setActiveToast(prev => (prev?.id === newNotif.id ? null : prev));
@@ -82,7 +78,6 @@ export const NotificationProvider = ({ children }) => {
     }}>
       {children}
 
-      {/* FLOATING TOAST POP-UP DI POJOK ATAS LAYAR */}
       {activeToast && (
         <div className="fixed top-20 right-6 z-[100] max-w-sm w-full bg-white rounded-2xl shadow-2xl border border-emerald-100 p-4 flex items-start space-x-3 animate-in slide-in-from-top-5 duration-300">
           <div className="p-2 rounded-xl bg-[#5dbb7d] text-white flex-shrink-0">
