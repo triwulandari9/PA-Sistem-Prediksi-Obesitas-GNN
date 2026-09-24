@@ -6,10 +6,36 @@ export const CustomSelect = ({
   value,
   onChange,
   placeholder = 'Pilih salah satu...',
-  className = ''
+  className = '',
+  placement = 'auto' // 'auto' | 'top' | 'bottom'
 }) => {
   const [isOpen, setIsOpen] = useState(false);
+  const [openUpward, setOpenUpward] = useState(false);
   const dropdownRef = useRef(null);
+
+  // Determine direction (up vs down) on open
+  const toggleDropdown = () => {
+    if (!isOpen && dropdownRef.current) {
+      if (placement === 'top') {
+        setOpenUpward(true);
+      } else if (placement === 'bottom') {
+        setOpenUpward(false);
+      } else {
+        // Auto detection: check viewport space below
+        const rect = dropdownRef.current.getBoundingClientRect();
+        const spaceBelow = window.innerHeight - rect.bottom;
+        const spaceAbove = rect.top;
+        const estimatedHeight = Math.min(options.length * 36 + 16, 220);
+
+        if (spaceBelow < estimatedHeight && spaceAbove > spaceBelow) {
+          setOpenUpward(true);
+        } else {
+          setOpenUpward(false);
+        }
+      }
+    }
+    setIsOpen(!isOpen);
+  };
 
   // Close on outside click
   useEffect(() => {
@@ -34,7 +60,7 @@ export const CustomSelect = ({
       {/* Trigger Button */}
       <button
         type="button"
-        onClick={() => setIsOpen(!isOpen)}
+        onClick={toggleDropdown}
         className={`w-full flex items-center justify-between px-3.5 py-2 rounded-xl border text-xs transition-all duration-200 shadow-sm focus:outline-none ${
           isOpen
             ? 'bg-white border-[#5dbb7d] ring-2 ring-[#5dbb7d]/20 text-slate-900'
@@ -48,7 +74,7 @@ export const CustomSelect = ({
         </span>
         <ChevronDown
           className={`w-3.5 h-3.5 transition-transform duration-300 ml-2 flex-shrink-0 ${
-            isOpen ? 'transform rotate-180 text-[#5dbb7d]' : 'text-slate-400'
+            isOpen ? (openUpward ? 'text-[#5dbb7d]' : 'transform rotate-180 text-[#5dbb7d]') : 'text-slate-400'
           }`}
         />
       </button>
@@ -56,10 +82,12 @@ export const CustomSelect = ({
       {/* Dropdown Menu */}
       {isOpen && (
         <div
-          className="absolute z-50 left-0 right-0 top-full mt-1.5 bg-white rounded-xl border border-slate-100 py-1 overflow-hidden max-h-52 overflow-y-auto"
+          className={`absolute z-[99] left-0 right-0 bg-white rounded-xl border border-slate-100 py-1 max-h-56 overflow-y-auto shadow-2xl ${
+            openUpward ? 'bottom-full mb-1.5' : 'top-full mt-1.5'
+          }`}
           style={{
-            boxShadow: '0 8px 30px -6px rgba(0,0,0,0.12), 0 2px 8px -2px rgba(0,0,0,0.06)',
-            animation: 'customSelectSlideDown 0.18s cubic-bezier(0.16, 1, 0.3, 1)'
+            boxShadow: '0 12px 36px -6px rgba(0,0,0,0.18), 0 4px 12px -2px rgba(0,0,0,0.08)',
+            animation: openUpward ? 'customSelectSlideUp 0.18s cubic-bezier(0.16, 1, 0.3, 1)' : 'customSelectSlideDown 0.18s cubic-bezier(0.16, 1, 0.3, 1)'
           }}
         >
           <div className="px-1 space-y-0.5">
@@ -85,12 +113,22 @@ export const CustomSelect = ({
         </div>
       )}
 
-      {/* Keyframe animation */}
+      {/* Keyframe animations */}
       <style>{`
         @keyframes customSelectSlideDown {
           from {
             opacity: 0;
             transform: translateY(-4px);
+          }
+          to {
+            opacity: 1;
+            transform: translateY(0);
+          }
+        }
+        @keyframes customSelectSlideUp {
+          from {
+            opacity: 0;
+            transform: translateY(4px);
           }
           to {
             opacity: 1;
