@@ -21,13 +21,14 @@ export const CustomSelect = ({
       } else if (placement === 'bottom') {
         setOpenUpward(false);
       } else {
-        // Auto detection: check viewport space below
+        // Auto detection: check viewport space below and above
         const rect = dropdownRef.current.getBoundingClientRect();
         const spaceBelow = window.innerHeight - rect.bottom;
         const spaceAbove = rect.top;
         const estimatedHeight = Math.min(options.length * 36 + 16, 220);
 
-        if (spaceBelow < estimatedHeight && spaceAbove > spaceBelow) {
+        // Buka ke atas jika ruang di bawah sempit (< 240px) atau berada di area bawah layar dan ruang atas cukup
+        if ((spaceBelow < estimatedHeight || spaceBelow < 240 || rect.top > window.innerHeight * 0.52) && spaceAbove > 160) {
           setOpenUpward(true);
         } else {
           setOpenUpward(false);
@@ -61,7 +62,7 @@ export const CustomSelect = ({
       <button
         type="button"
         onClick={toggleDropdown}
-        className={`w-full flex items-center justify-between px-3.5 py-2 rounded-xl border text-xs transition-all duration-200 shadow-sm focus:outline-none ${
+        className={`w-full flex items-center justify-between px-3.5 py-2 rounded-xl border text-xs transition-all duration-200 shadow-sm focus:outline-none cursor-pointer ${
           isOpen
             ? 'bg-white border-[#5dbb7d] ring-2 ring-[#5dbb7d]/20 text-slate-900'
             : selectedOption
@@ -73,8 +74,8 @@ export const CustomSelect = ({
           {selectedOption ? selectedOption.label : placeholder}
         </span>
         <ChevronDown
-          className={`w-3.5 h-3.5 transition-transform duration-300 ml-2 flex-shrink-0 ${
-            isOpen ? (openUpward ? 'text-[#5dbb7d]' : 'transform rotate-180 text-[#5dbb7d]') : 'text-slate-400'
+          className={`w-3.5 h-3.5 transition-transform duration-200 ml-2 flex-shrink-0 ${
+            isOpen ? 'transform rotate-180 text-[#5dbb7d]' : 'text-slate-400'
           }`}
         />
       </button>
@@ -82,15 +83,15 @@ export const CustomSelect = ({
       {/* Dropdown Menu */}
       {isOpen && (
         <div
-          className={`absolute z-[99] left-0 right-0 bg-white rounded-xl border border-slate-100 py-1 max-h-56 overflow-y-auto shadow-2xl ${
+          className={`absolute z-[100] left-0 right-0 bg-white rounded-xl border border-slate-200/90 py-1.5 max-h-56 overflow-y-auto ${
             openUpward ? 'bottom-full mb-1.5' : 'top-full mt-1.5'
           }`}
           style={{
-            boxShadow: '0 12px 36px -6px rgba(0,0,0,0.18), 0 4px 12px -2px rgba(0,0,0,0.08)',
-            animation: openUpward ? 'customSelectSlideUp 0.18s cubic-bezier(0.16, 1, 0.3, 1)' : 'customSelectSlideDown 0.18s cubic-bezier(0.16, 1, 0.3, 1)'
+            boxShadow: '0 12px 32px -4px rgba(0, 0, 0, 0.15), 0 4px 12px -2px rgba(0, 0, 0, 0.08)',
+            animation: openUpward ? 'customSelectSlideUp 0.16s cubic-bezier(0.16, 1, 0.3, 1)' : 'customSelectSlideDown 0.16s cubic-bezier(0.16, 1, 0.3, 1)'
           }}
         >
-          <div className="px-1 space-y-0.5">
+          <div className="px-1.5 space-y-0.5">
             {options.map((option) => {
               const isSelected = String(option.value) === String(value);
               return (
@@ -98,10 +99,10 @@ export const CustomSelect = ({
                   key={option.value}
                   type="button"
                   onClick={() => handleSelect(option.value)}
-                  className={`w-full text-left px-3 py-2 text-xs flex items-center justify-between rounded-lg transition-all duration-150 ${
+                  className={`w-full text-left px-3 py-2 text-xs flex items-center justify-between rounded-lg transition-all duration-150 cursor-pointer ${
                     isSelected
-                      ? 'bg-[#5dbb7d] text-white font-bold'
-                      : 'text-slate-600 hover:bg-slate-50 hover:text-slate-900'
+                      ? 'bg-[#5dbb7d] text-white font-bold shadow-sm shadow-[#5dbb7d]/30'
+                      : 'text-slate-700 hover:bg-emerald-50/70 hover:text-emerald-900 font-medium'
                   }`}
                 >
                   <span className="truncate">{option.label}</span>
@@ -118,7 +119,7 @@ export const CustomSelect = ({
         @keyframes customSelectSlideDown {
           from {
             opacity: 0;
-            transform: translateY(-4px);
+            transform: translateY(-6px);
           }
           to {
             opacity: 1;
@@ -128,7 +129,7 @@ export const CustomSelect = ({
         @keyframes customSelectSlideUp {
           from {
             opacity: 0;
-            transform: translateY(4px);
+            transform: translateY(6px);
           }
           to {
             opacity: 1;

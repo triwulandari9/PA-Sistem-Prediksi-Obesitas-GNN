@@ -458,6 +458,7 @@ export const Predict = () => {
                   options={waterOptions}
                   value={formData.jml_konsum_air}
                   placeholder="Pilih jumlah konsumsi air..."
+                  placement="top"
                   onChange={(val) => handleCustomSelectChange('jml_konsum_air', val)}
                 />
               </div>
@@ -521,6 +522,7 @@ export const Predict = () => {
                   options={snackingOptions}
                   value={formData.kat_makan_cemilan}
                   placeholder="Pilih kebiasaan ngemil..."
+                  placement="top"
                   onChange={(val) => handleCustomSelectChange('kat_makan_cemilan', val)}
                 />
               </div>
@@ -532,6 +534,7 @@ export const Predict = () => {
                   options={screenTimeOptions}
                   value={formData.durasi_penggunaan_gadget}
                   placeholder="Pilih durasi gadget..."
+                  placement="top"
                   onChange={(val) => handleCustomSelectChange('durasi_penggunaan_gadget', val)}
                 />
               </div>
@@ -543,6 +546,7 @@ export const Predict = () => {
                   options={transportOptions}
                   value={formData.jenis_transportasi}
                   placeholder="Pilih moda transportasi..."
+                  placement="top"
                   onChange={(val) => handleCustomSelectChange('jenis_transportasi', val)}
                 />
               </div>
