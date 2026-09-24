@@ -32,15 +32,44 @@ export const AdminDashboard = () => {
       let predsList = [];
 
       if (isSupabaseConfigured && supabase) {
-        const { data: usersData } = await supabase.from('profiles').select('id, name, email, role');
-        const { data: predsData } = await supabase.from('predictions').select('*, profiles(name, email)').order('created_at', { ascending: false });
+        // Users
+        let usersData = null;
+        try {
+          const resP = await supabase.from('pengguna').select('pengguna_id, pengguna_nama');
+          if (!resP.error && resP.data) usersData = resP.data;
+        } catch (e) {}
+        if (!usersData) {
+          const resProf = await supabase.from('profiles').select('id, name, email, role');
+          usersData = resProf.data || [];
+        }
+        usersList = usersData;
 
-        usersList = usersData || [];
-        predsList = (predsData || []).map(p => ({
-          ...p,
-          user_name: p.profiles?.name || 'User ' + p.user_id?.slice(-4),
-          user_email: p.profiles?.email || '-'
-        }));
+        // Predictions
+        let predsData = null;
+        try {
+          const resPR = await supabase.from('prediksi_risiko').select('*, pengguna(pengguna_nama)').order('tgl_prediksi', { ascending: false });
+          if (!resPR.error && resPR.data) {
+            predsData = resPR.data.map(p => ({
+              ...p,
+              id: p.prediksi_id || p.id,
+              user_name: p.pengguna?.pengguna_nama || 'User ' + (p.pengguna_id || p.user_id)?.slice(-4),
+              created_at: p.tgl_prediksi || p.created_at,
+              hasil_prediksi: p.hasil_prediksi || p.risk_level || p.prediction
+            }));
+          }
+        } catch (e) {}
+
+        if (!predsData) {
+          const resPred = await supabase.from('predictions').select('*, profiles(name, email)').order('created_at', { ascending: false });
+          predsData = (resPred.data || []).map(p => ({
+            ...p,
+            id: p.prediksi_id || p.id,
+            user_name: p.profiles?.name || 'User ' + (p.pengguna_id || p.user_id)?.slice(-4),
+            created_at: p.tgl_prediksi || p.created_at,
+            hasil_prediksi: p.hasil_prediksi || p.risk_level || p.prediction
+          }));
+        }
+        predsList = predsData;
       } else {
         usersList = await localDb.getAllUsers();
         predsList = await localDb.getAllPredictions();

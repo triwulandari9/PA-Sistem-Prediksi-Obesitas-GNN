@@ -50,28 +50,51 @@ export const AuthProvider = ({ children }) => {
         console.warn('Cek tabel admin Supabase:', errAdmin.message);
       }
 
-      // 2. Cek di tabel 'profiles' Supabase (Sesuai Entitas Pengguna di ERD)
-      const { data, error } = await supabase
-        .from('profiles')
-        .select('*')
-        .ilike('name', cleanUser)
-        .eq('password', password)
-        .maybeSingle();
+      // 2. Cek di tabel 'pengguna' Supabase (Sesuai Entitas Pengguna di ERD)
+      let userData = null;
+      try {
+        const { data: pData } = await supabase
+          .from('pengguna')
+          .select('*')
+          .ilike('pengguna_nama', cleanUser)
+          .eq('pengguna_kata_sandi', password)
+          .maybeSingle();
 
-      if (error) {
-        console.error('Supabase login error:', error);
-        throw new Error('Gagal terhubung ke database.');
+        if (pData) {
+          userData = {
+            id: pData.pengguna_id,
+            name: pData.pengguna_nama,
+            role: 'user'
+          };
+        }
+      } catch (ePengguna) {
+        console.warn('Cek tabel pengguna:', ePengguna.message);
       }
 
-      if (data) {
-        const loggedInUser = {
-          id: data.id,
-          name: data.name,
-          role: data.role || 'user'
-        };
-        setUser(loggedInUser);
-        localStorage.setItem('pa_gnn_auth_user', JSON.stringify(loggedInUser));
-        return loggedInUser;
+      // Fallback ke tabel 'profiles' jika belum di-rename
+      if (!userData) {
+        try {
+          const { data: profData } = await supabase
+            .from('profiles')
+            .select('*')
+            .ilike('name', cleanUser)
+            .eq('password', password)
+            .maybeSingle();
+
+          if (profData) {
+            userData = {
+              id: profData.id,
+              name: profData.name,
+              role: profData.role || 'user'
+            };
+          }
+        } catch (eProf) {}
+      }
+
+      if (userData) {
+        setUser(userData);
+        localStorage.setItem('pa_gnn_auth_user', JSON.stringify(userData));
+        return userData;
       }
     }
 
@@ -109,41 +132,78 @@ export const AuthProvider = ({ children }) => {
     const cleanUser = username.trim();
 
     if (isSupabaseConfigured && supabase) {
-      // 1. Cek apakah Nama Pengguna sudah pernah didaftarkan (Case-Insensitive)
-      const { data: existingUser } = await supabase
-        .from('profiles')
-        .select('id, name')
-        .ilike('name', cleanUser)
-        .maybeSingle();
+      // 1. Cek apakah Nama Pengguna sudah pernah didaftarkan
+      let existingUser = null;
+      try {
+        const { data: exP } = await supabase
+          .from('pengguna')
+          .select('pengguna_id, pengguna_nama')
+          .ilike('pengguna_nama', cleanUser)
+          .maybeSingle();
+        existingUser = exP;
+      } catch (e) {}
+
+      if (!existingUser) {
+        try {
+          const { data: exProf } = await supabase
+            .from('profiles')
+            .select('id, name')
+            .ilike('name', cleanUser)
+            .maybeSingle();
+          existingUser = exProf;
+        } catch (e) {}
+      }
 
       if (existingUser) {
         throw new Error(`Nama Pengguna "${cleanUser}" sudah terdaftar. Silakan langsung login.`);
       }
 
-      // 2. Simpan langsung ke tabel profiles
-      const newUserRecord = {
-        name: cleanUser,
-        password: password,
-        role: role,
-        created_at: new Date().toISOString()
-      };
+      // 2. Simpan ke tabel 'pengguna' (Sesuai ERD)
+      let createdUser = null;
+      try {
+        const { data: newP, error: pErr } = await supabase
+          .from('pengguna')
+          .insert([{
+            pengguna_nama: cleanUser,
+            pengguna_kata_sandi: password,
+            created_at: new Date().toISOString()
+          }])
+          .select()
+          .single();
 
-      const { data, error } = await supabase
-        .from('profiles')
-        .insert([newUserRecord])
-        .select()
-        .single();
+        if (!pErr && newP) {
+          createdUser = {
+            id: newP.pengguna_id,
+            name: newP.pengguna_nama,
+            role: 'user'
+          };
+        }
+      } catch (e) {}
 
-      if (error) {
-        console.error('Supabase register error:', error);
-        throw new Error('Gagal mendaftarkan akun: ' + error.message);
+      // Fallback simpan ke 'profiles' jika belum di-rename
+      if (!createdUser) {
+        const { data: newProf, error: profErr } = await supabase
+          .from('profiles')
+          .insert([{
+            name: cleanUser,
+            password: password,
+            role: role,
+            created_at: new Date().toISOString()
+          }])
+          .select()
+          .single();
+
+        if (profErr) {
+          console.error('Supabase register error:', profErr);
+          throw new Error('Gagal mendaftarkan akun: ' + profErr.message);
+        }
+
+        createdUser = {
+          id: newProf.id,
+          name: newProf.name,
+          role: newProf.role || 'user'
+        };
       }
-
-      const createdUser = {
-        id: data.id,
-        name: data.name,
-        role: data.role || 'user'
-      };
 
       setUser(createdUser);
       localStorage.setItem('pa_gnn_auth_user', JSON.stringify(createdUser));
@@ -162,27 +222,24 @@ export const AuthProvider = ({ children }) => {
     const cleanUser = username.trim();
 
     if (isSupabaseConfigured && supabase) {
-      // 1. Cek apakah Nama Pengguna ada
-      const { data: existingUser, error: checkError } = await supabase
-        .from('profiles')
-        .select('id, name')
-        .ilike('name', cleanUser)
-        .maybeSingle();
+      let updated = false;
+      try {
+        const { error: errP } = await supabase
+          .from('pengguna')
+          .update({ pengguna_kata_sandi: newPassword })
+          .ilike('pengguna_nama', cleanUser);
+        if (!errP) updated = true;
+      } catch (e) {}
 
-      if (checkError) throw checkError;
+      if (!updated) {
+        const { error: updateError } = await supabase
+          .from('profiles')
+          .update({ password: newPassword })
+          .ilike('name', cleanUser);
 
-      if (!existingUser) {
-        throw new Error(`Nama Pengguna "${cleanUser}" tidak ditemukan.`);
-      }
-
-      // 2. Update password baru
-      const { error: updateError } = await supabase
-        .from('profiles')
-        .update({ password: newPassword })
-        .eq('id', existingUser.id);
-
-      if (updateError) {
-        throw new Error('Gagal memperbarui kata sandi: ' + updateError.message);
+        if (updateError) {
+          throw new Error('Gagal memperbarui kata sandi: ' + updateError.message);
+        }
       }
 
       return { success: true };

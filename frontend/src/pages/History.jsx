@@ -22,14 +22,35 @@ export const History = () => {
     setLoading(true);
     try {
       if (isSupabaseConfigured && supabase) {
-        const { data, error } = await supabase
-          .from('predictions')
-          .select('*')
-          .eq('user_id', user.id)
-          .order('created_at', { ascending: true });
+        let historyData = null;
+        try {
+          const { data, error } = await supabase
+            .from('prediksi_risiko')
+            .select('*')
+            .eq('pengguna_id', user.id)
+            .order('tgl_prediksi', { ascending: true });
 
-        if (error) throw error;
-        setPredictions(data || []);
+          if (!error && data) {
+            historyData = data.map(d => ({
+              ...d,
+              id: d.prediksi_id || d.id,
+              created_at: d.tgl_prediksi || d.created_at
+            }));
+          }
+        } catch (ePR) {}
+
+        if (!historyData) {
+          const { data, error } = await supabase
+            .from('predictions')
+            .select('*')
+            .eq('user_id', user.id)
+            .order('created_at', { ascending: true });
+
+          if (error) throw error;
+          historyData = data || [];
+        }
+
+        setPredictions(historyData || []);
       } else {
         const data = await localDb.getUserPredictions(user.id);
         setPredictions(data || []);
@@ -60,12 +81,21 @@ export const History = () => {
     setDeleteLoading(true);
     try {
       if (isSupabaseConfigured && supabase) {
-        const { error } = await supabase
-          .from('predictions')
-          .delete()
-          .eq('id', deleteTargetId);
+        let deleted = false;
+        try {
+          const { error: errPR } = await supabase
+            .from('prediksi_risiko')
+            .delete()
+            .eq('prediksi_id', deleteTargetId);
+          if (!errPR) deleted = true;
+        } catch (e) {}
 
-        if (error) throw error;
+        if (!deleted) {
+          await supabase
+            .from('predictions')
+            .delete()
+            .eq('id', deleteTargetId);
+        }
       } else {
         await localDb.deletePrediction(deleteTargetId);
       }

@@ -13,7 +13,7 @@ EXCEPTION
     WHEN duplicate_object THEN null;
 END $$;
 
--- 3. TABEL ADMIN (Sesuai Entitas Admin di ERD Skripsi)
+-- 3. TABEL ADMIN (Entitas Admin di ERD)
 CREATE TABLE IF NOT EXISTS public.admin (
     admin_id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
     admin_nama TEXT NOT NULL UNIQUE,
@@ -26,22 +26,20 @@ INSERT INTO public.admin (admin_nama, admin_kata_sandi)
 VALUES ('Sari', '111111')
 ON CONFLICT (admin_nama) DO NOTHING;
 
--- 4. TABEL PENGGUNA (Entitas Pengguna di ERD Skripsi / public.profiles)
-CREATE TABLE IF NOT EXISTS public.profiles (
-    id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
-    name TEXT NOT NULL,
-    email TEXT,
-    password TEXT,
-    role user_role NOT NULL DEFAULT 'user',
+-- 4. TABEL PENGGUNA (Entitas Pengguna di ERD)
+CREATE TABLE IF NOT EXISTS public.pengguna (
+    pengguna_id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
+    pengguna_nama TEXT NOT NULL UNIQUE,
+    pengguna_kata_sandi TEXT NOT NULL,
     created_at TIMESTAMP WITH TIME ZONE DEFAULT timezone('utc'::text, now()) NOT NULL
 );
 
--- 4. TABEL PREDIKSI (Sesuai dengan 14 Atribut di ERD Bahasa Indonesia)
-CREATE TABLE IF NOT EXISTS public.predictions (
-    id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
-    user_id UUID NOT NULL REFERENCES public.profiles(id) ON DELETE CASCADE,
+-- 5. TABEL PREDIKSI_RISIKO (Entitas Prediksi_Risiko di ERD)
+CREATE TABLE IF NOT EXISTS public.prediksi_risiko (
+    prediksi_id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
+    pengguna_id UUID NOT NULL REFERENCES public.pengguna(pengguna_id) ON DELETE CASCADE,
     
-    -- 14 Atribut Input Sesuai ERD Skripsi (Bahasa Indonesia)
+    -- 14 Atribut Input Sesuai ERD Skripsi
     umur NUMERIC(5, 1) NOT NULL,                          -- Usia responden (>= 18 tahun)
     jenis_kelamin SMALLINT NOT NULL,                      -- 0: Wanita, 1: Pria
     riwayat_obesitas SMALLINT NOT NULL,                   -- 0: Tidak, 1: Ya
@@ -57,39 +55,40 @@ CREATE TABLE IF NOT EXISTS public.predictions (
     kat_konsum_alkohol SMALLINT NOT NULL,                 -- 0: Selalu, 1: Sering, 2: Kadang, 3: Tidak Minum
     jenis_transportasi SMALLINT NOT NULL,                 -- 0: Mobil, 1: Sepeda, 2: Motor, 3: Umum, 4: Jalan
 
-    -- Hasil Prediksi Model & Waktu (Sesuai ERD Skripsi)
+    -- Hasil Prediksi Model & Metadata Waktu (Sesuai ERD Skripsi)
     hasil_prediksi TEXT NOT NULL,                         -- ('Rendah', 'Sedang', 'Tinggi')
     probabilities JSONB,                                  -- probabilitas softmax
     recommendations JSONB,                                -- saran rekomendasi pola hidup
-    created_at TIMESTAMP WITH TIME ZONE DEFAULT timezone('utc'::text, now()) NOT NULL -- tgl_prediksi
+    tgl_prediksi TIMESTAMP WITH TIME ZONE DEFAULT timezone('utc'::text, now()) NOT NULL
 );
 
--- CATATAN MIGRASI: JIKA INGIN MERAPIKAN TABEL SUPABASE LAMA:
+-- ==========================================================
+-- SCRIPT MIGRASI / RENAME DARI NAMA LAMA KE NAMA ERD RESMI
+-- (Dapat langsung dijalankan di Supabase SQL Editor)
+-- ==========================================================
 /*
--- 1. Rename kolom ke Bahasa Indonesia
-ALTER TABLE public.predictions RENAME COLUMN age TO umur;
-ALTER TABLE public.predictions RENAME COLUMN gender TO jenis_kelamin;
-ALTER TABLE public.predictions RENAME COLUMN family_history TO riwayat_obesitas;
-ALTER TABLE public.predictions RENAME COLUMN high_calorie_food TO kat_makan_berkalori;
-ALTER TABLE public.predictions RENAME COLUMN vegetable_consumption TO kat_makan_sayur;
-ALTER TABLE public.predictions RENAME COLUMN meal_per_day TO jml_makan_utama;
-ALTER TABLE public.predictions RENAME COLUMN snacking TO kat_makan_cemilan;
-ALTER TABLE public.predictions RENAME COLUMN smoking TO kat_merokok;
-ALTER TABLE public.predictions RENAME COLUMN water_intake TO jml_konsum_air;
-ALTER TABLE public.predictions RENAME COLUMN calorie_monitoring TO monitoring_kalori;
-ALTER TABLE public.predictions RENAME COLUMN physical_activity TO frek_aktivitas_fisik;
-ALTER TABLE public.predictions RENAME COLUMN screen_time TO durasi_penggunaan_gadget;
-ALTER TABLE public.predictions RENAME COLUMN alcohol TO kat_konsum_alkohol;
-ALTER TABLE public.predictions RENAME COLUMN transport TO jenis_transportasi;
+-- A. Rename tabel 'profiles' ke 'pengguna' & kolomnya
+ALTER TABLE IF EXISTS public.profiles RENAME TO pengguna;
+ALTER TABLE public.pengguna RENAME COLUMN id TO pengguna_id;
+ALTER TABLE public.pengguna RENAME COLUMN name TO pengguna_nama;
+ALTER TABLE public.pengguna RENAME COLUMN password TO pengguna_kata_sandi;
 
--- 2. Jadikan 1 kolom hasil prediksi murni Bahasa Indonesia
-ALTER TABLE public.predictions RENAME COLUMN risk_level TO hasil_prediksi;
-ALTER TABLE public.predictions DROP COLUMN IF EXISTS prediction;
+-- B. Rename tabel 'predictions' ke 'prediksi_risiko' & kolomnya
+ALTER TABLE IF EXISTS public.predictions RENAME TO prediksi_risiko;
+ALTER TABLE public.prediksi_risiko RENAME COLUMN id TO prediksi_id;
+ALTER TABLE public.prediksi_risiko RENAME COLUMN user_id TO pengguna_id;
+ALTER TABLE public.prediksi_risiko RENAME COLUMN created_at TO tgl_prediksi;
+DO $$ BEGIN
+    ALTER TABLE public.prediksi_risiko RENAME COLUMN risk_level TO hasil_prediksi;
+EXCEPTION WHEN undefined_column THEN null; END $$;
+DO $$ BEGIN
+    ALTER TABLE public.prediksi_risiko DROP COLUMN IF EXISTS prediction;
+EXCEPTION WHEN undefined_column THEN null; END $$;
 */
 
--- 5. INDEX UNTUK PERFORMA QUERY
-CREATE INDEX IF NOT EXISTS idx_predictions_user_id ON public.predictions(user_id);
-CREATE INDEX IF NOT EXISTS idx_predictions_created_at ON public.predictions(created_at DESC);
+-- INDEX UNTUK PERFORMA QUERY
+CREATE INDEX IF NOT EXISTS idx_prediksi_pengguna_id ON public.prediksi_risiko(pengguna_id);
+CREATE INDEX IF NOT EXISTS idx_prediksi_tgl_prediksi ON public.prediksi_risiko(tgl_prediksi DESC);
 
 -- 6. AUTOMATIC TRIGGER REGISTRASI PENGGUNA BARU
 CREATE OR REPLACE FUNCTION public.handle_new_user()

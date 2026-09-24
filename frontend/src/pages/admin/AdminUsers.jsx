@@ -16,13 +16,38 @@ export const AdminUsers = () => {
     setLoading(true);
     try {
       if (isSupabaseConfigured && supabase) {
-        const { data, error } = await supabase
-          .from('profiles')
-          .select('*')
-          .order('created_at', { ascending: true });
+        let usersData = null;
+        try {
+          const { data, error } = await supabase
+            .from('pengguna')
+            .select('*')
+            .order('created_at', { ascending: true });
+          if (!error && data && data.length > 0) {
+            usersData = data.map(u => ({
+              ...u,
+              id: u.pengguna_id || u.id,
+              name: u.pengguna_nama || u.name,
+              created_at: u.created_at
+            }));
+          }
+        } catch (eP) {}
 
-        if (error) throw error;
-        setUsers(data || []);
+        if (!usersData) {
+          const { data, error } = await supabase
+            .from('profiles')
+            .select('*')
+            .order('created_at', { ascending: true });
+
+          if (error) throw error;
+          usersData = (data || []).map(u => ({
+            ...u,
+            id: u.pengguna_id || u.id,
+            name: u.pengguna_nama || u.name,
+            created_at: u.created_at
+          }));
+        }
+
+        setUsers(usersData || []);
       } else {
         const data = await localDb.getAllUsers();
         setUsers(data || []);
@@ -48,12 +73,22 @@ export const AdminUsers = () => {
     setDeleteLoading(true);
     try {
       if (isSupabaseConfigured && supabase) {
-        const { error } = await supabase
-          .from('profiles')
-          .delete()
-          .eq('id', deleteTargetUser.id);
+        const targetId = deleteTargetUser.pengguna_id || deleteTargetUser.id;
+        let deleted = false;
+        try {
+          const { error: errP } = await supabase
+            .from('pengguna')
+            .delete()
+            .eq('pengguna_id', targetId);
+          if (!errP) deleted = true;
+        } catch (e) {}
 
-        if (error) throw error;
+        if (!deleted) {
+          await supabase
+            .from('profiles')
+            .delete()
+            .eq('id', targetId);
+        }
       } else {
         await localDb.deleteUser(deleteTargetUser.id);
       }

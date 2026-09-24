@@ -19,18 +19,40 @@ export const AdminPredictions = () => {
     setLoading(true);
     try {
       if (isSupabaseConfigured && supabase) {
-        const { data, error } = await supabase
-          .from('predictions')
-          .select('*, profiles(name)')
-          .order('created_at', { ascending: true });
+        let predsData = null;
+        try {
+          const { data, error } = await supabase
+            .from('prediksi_risiko')
+            .select('*, pengguna(pengguna_nama)')
+            .order('tgl_prediksi', { ascending: true });
+          if (!error && data) {
+            predsData = data.map(p => ({
+              ...p,
+              id: p.prediksi_id || p.id,
+              user_name: p.pengguna?.pengguna_nama || 'User ' + (p.pengguna_id || p.user_id)?.slice(-4),
+              created_at: p.tgl_prediksi || p.created_at,
+              hasil_prediksi: p.hasil_prediksi || p.risk_level || p.prediction
+            }));
+          }
+        } catch (ePR) {}
 
-        if (error) throw error;
-        
-        const mapped = (data || []).map(p => ({
-          ...p,
-          user_name: p.profiles?.name || 'User ' + p.user_id?.slice(-4)
-        }));
-        setPredictions(mapped);
+        if (!predsData) {
+          const { data, error } = await supabase
+            .from('predictions')
+            .select('*, profiles(name)')
+            .order('created_at', { ascending: true });
+
+          if (error) throw error;
+          predsData = (data || []).map(p => ({
+            ...p,
+            id: p.prediksi_id || p.id,
+            user_name: p.pengguna?.pengguna_nama || p.profiles?.name || 'User ' + (p.pengguna_id || p.user_id)?.slice(-4),
+            created_at: p.tgl_prediksi || p.created_at,
+            hasil_prediksi: p.hasil_prediksi || p.risk_level || p.prediction
+          }));
+        }
+
+        setPredictions(predsData || []);
       } else {
         const data = await localDb.getAllPredictions();
         setPredictions(data || []);
@@ -61,12 +83,21 @@ export const AdminPredictions = () => {
     setDeleteLoading(true);
     try {
       if (isSupabaseConfigured && supabase) {
-        const { error } = await supabase
-          .from('predictions')
-          .delete()
-          .eq('id', deleteTargetId);
+        let deleted = false;
+        try {
+          const { error: errPR } = await supabase
+            .from('prediksi_risiko')
+            .delete()
+            .eq('prediksi_id', deleteTargetId);
+          if (!errPR) deleted = true;
+        } catch (e) {}
 
-        if (error) throw error;
+        if (!deleted) {
+          await supabase
+            .from('predictions')
+            .delete()
+            .eq('id', deleteTargetId);
+        }
       } else {
         await localDb.deletePrediction(deleteTargetId);
       }

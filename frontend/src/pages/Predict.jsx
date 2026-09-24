@@ -184,7 +184,7 @@ export const Predict = () => {
 
       // 2. Simpan ke database Supabase (Murni Bahasa Indonesia sesuai ERD)
       const recordToSave = {
-        user_id: user?.id || 'guest',
+        pengguna_id: user?.id || 'guest',
         ...payload,
         hasil_prediksi: predictionResult.risk_level, // 'Rendah', 'Sedang', 'Tinggi'
         probabilities: predictionResult.probabilities,
@@ -192,7 +192,18 @@ export const Predict = () => {
       };
 
       if (isSupabaseConfigured && supabase && user?.id) {
-        await supabase.from('predictions').insert([recordToSave]);
+        // Coba insert ke tabel resmi 'prediksi_risiko'
+        const { error: errPR } = await supabase.from('prediksi_risiko').insert([recordToSave]);
+        if (errPR) {
+          // Fallback ke tabel 'predictions' jika belum di-rename di Supabase
+          await supabase.from('predictions').insert([{
+            user_id: user.id,
+            ...payload,
+            hasil_prediksi: predictionResult.risk_level,
+            probabilities: predictionResult.probabilities,
+            recommendations: predictionResult.recommendations
+          }]);
+        }
       } else {
         await localDb.savePrediction(recordToSave);
       }
