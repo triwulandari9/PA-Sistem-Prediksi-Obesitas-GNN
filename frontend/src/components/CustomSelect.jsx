@@ -7,13 +7,12 @@ export const CustomSelect = ({
   onChange,
   placeholder = 'Pilih salah satu...',
   className = '',
-  placement = 'auto' // 'auto' | 'top' | 'bottom'
+  placement = 'auto'
 }) => {
   const [isOpen, setIsOpen] = useState(false);
   const [openUpward, setOpenUpward] = useState(false);
   const dropdownRef = useRef(null);
 
-  // Determine direction (up vs down) on open
   const toggleDropdown = () => {
     if (!isOpen && dropdownRef.current) {
       if (placement === 'top') {
@@ -21,13 +20,11 @@ export const CustomSelect = ({
       } else if (placement === 'bottom') {
         setOpenUpward(false);
       } else {
-        // Auto detection: check viewport space below and above
         const rect = dropdownRef.current.getBoundingClientRect();
         const spaceBelow = window.innerHeight - rect.bottom;
         const spaceAbove = rect.top;
         const estimatedHeight = Math.min(options.length * 36 + 16, 220);
 
-        // Buka ke atas jika ruang di bawah sempit (< 240px) atau berada di area bawah layar dan ruang atas cukup
         if ((spaceBelow < estimatedHeight || spaceBelow < 240 || rect.top > window.innerHeight * 0.52) && spaceAbove > 160) {
           setOpenUpward(true);
         } else {
@@ -38,7 +35,6 @@ export const CustomSelect = ({
     setIsOpen(!isOpen);
   };
 
-  // Close on outside click
   useEffect(() => {
     const handleClickOutside = (event) => {
       if (dropdownRef.current && !dropdownRef.current.contains(event.target)) {
@@ -58,7 +54,6 @@ export const CustomSelect = ({
 
   return (
     <div className={`relative ${className}`} ref={dropdownRef}>
-      {/* Trigger Button */}
       <button
         type="button"
         onClick={toggleDropdown}
@@ -80,7 +75,6 @@ export const CustomSelect = ({
         />
       </button>
 
-      {/* Dropdown Menu */}
       {isOpen && (
         <div
           className={`absolute z-[100] left-0 right-0 bg-white rounded-xl border border-slate-200/90 py-1.5 max-h-56 overflow-y-auto ${
@@ -114,7 +108,6 @@ export const CustomSelect = ({
         </div>
       )}
 
-      {/* Keyframe animations */}
       <style>{`
         @keyframes customSelectSlideDown {
           from {
