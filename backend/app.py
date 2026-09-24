@@ -307,7 +307,7 @@ def predict():
             "probs": [prob_low, prob_medium, prob_high],
             "recommendations": recommendations,
             "input_features": features_dict,
-            "disclaimer": "Hasil analisis ini merupakan deteksi dini berbasis kecerdasan buatan (Graph Neural Network - GraphSAGE) dan bukan merupakan diagnosis medis resmi. Konsultasikan dengan tenaga medis profesional untuk penanganan lebih lanjut."
+            "disclaimer": "Hasil analisis ini merupakan deteksi dini berbasis metode Graph Neural Network (GraphSAGE) dan bukan merupakan diagnosis medis resmi. Konsultasikan dengan tenaga medis profesional untuk penanganan lebih lanjut."
         }
 
         return jsonify(result_payload), 200

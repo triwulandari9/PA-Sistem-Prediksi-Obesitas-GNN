@@ -19,7 +19,7 @@ export const NotificationProvider = ({ children }) => {
       {
         id: 'init-1',
         title: 'Sistem GNN Siap',
-        message: 'Model AI GraphSAGE aktif dan siap melakukan deteksi dini risiko obesitas.',
+        message: 'Model GraphSAGE (GNN) aktif dan siap melakukan deteksi dini risiko obesitas.',
         time: 'Tersedia',
         read: true,
         createdAt: new Date().toISOString()

@@ -211,7 +211,7 @@ export const Predict = () => {
       // 3. Tambahkan Notifikasi Riil ke Sistem
       addNotification({
         title: 'Deteksi Risiko Selesai',
-        message: `Hasil analisis model AI GNN: Tingkat Risiko Obesitas Anda ${predictionResult.risk_level}.`,
+        message: `Hasil analisis model GraphSAGE (GNN): Tingkat Risiko Obesitas Anda ${predictionResult.risk_level}.`,
         type: 'prediction'
       });
 
@@ -221,9 +221,9 @@ export const Predict = () => {
     } catch (err) {
       console.error('Error in predict:', err);
       if (err.code === 'ECONNABORTED' || err.message?.includes('timeout')) {
-        setError('Koneksi ke backend Flask timeout (15 detik). Silakan coba beberapa saat lagi.');
+        setError('Koneksi ke backend timeout (15 detik). Silakan coba beberapa saat lagi.');
       } else if (err.code === 'ERR_NETWORK' || !err.response) {
-        setError('Tidak dapat terhubung ke server backend AI. Pastikan VITE_API_BASE_URL sudah terpasang dan aplikasi telah di-redeploy.');
+        setError('Tidak dapat terhubung ke server backend model. Pastikan server aktif dan coba beberapa saat lagi.');
       } else {
         setError(err.response?.data?.error || err.message || 'Gagal memproses prediksi.');
       }

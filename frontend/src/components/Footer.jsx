@@ -36,7 +36,7 @@ export const Footer = () => {
               <div>
                 <h5 className="text-xs font-bold uppercase tracking-wider text-amber-800 mb-1">Medical Disclaimer</h5>
                 <p className="text-xs text-amber-700 leading-relaxed">
-                  Sistem ini adalah media skrining dan deteksi dini berbantuan AI, 
+                  Sistem ini adalah media skrining dan deteksi dini berbasis metode Graph Neural Network (GraphSAGE), 
                   <b> bukan merupakan pengganti diagnosis medis resmi</b>. Konsultasikan kondisi kesehatan dengan dokter atau ahli gizi berlisensi.
                 </p>
               </div>

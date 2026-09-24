@@ -36,7 +36,7 @@ export const Home = () => {
               Deteksi Dini Tingkat Risiko Obesitas Anda
             </h1>
             <p className="text-xs sm:text-sm text-emerald-50/90 max-w-xl leading-relaxed">
-              Ketahui kecenderungan risiko kesehatan Anda berdasarkan 14 indikator gaya hidup harian secara cepat, akurat, dan berbasis AI.
+              Ketahui kecenderungan risiko kesehatan Anda berdasarkan 14 indikator gaya hidup harian secara cepat, akurat, dan berbasis metode Graph Neural Network.
             </p>
           </div>
 

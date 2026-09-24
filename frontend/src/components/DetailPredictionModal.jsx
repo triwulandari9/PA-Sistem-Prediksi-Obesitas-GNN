@@ -100,7 +100,7 @@ export const DetailPredictionModal = ({ isOpen, prediction, onClose }) => {
           {/* Result Card */}
           <div className="bg-slate-50 border border-slate-200 rounded-xl p-5 flex flex-col sm:flex-row items-center justify-between gap-4">
             <div>
-              <span className="text-xs font-semibold text-slate-500 uppercase tracking-wider block mb-1">Status Prediksi AI (GraphSAGE)</span>
+              <span className="text-xs font-semibold text-slate-500 uppercase tracking-wider block mb-1">Status Prediksi Model GraphSAGE (GNN)</span>
               <div className="flex items-center gap-3">
                 <RiskBadge risk={prediction.hasil_prediksi || prediction.risk_level || prediction.prediction} size="lg" />
               </div>

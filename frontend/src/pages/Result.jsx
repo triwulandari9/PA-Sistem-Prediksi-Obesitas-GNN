@@ -178,7 +178,7 @@ export const Result = () => {
               Pernyataan Penyangkalan Medis (Medical Disclaimer)
             </h3>
             <p className="text-xs text-amber-800 leading-relaxed">
-              Hasil analisis di atas merupakan prediksi deteksi dini yang dihitung oleh algoritma kecerdasan buatan (Graph Neural Network - GraphSAGE) berdasarkan faktor gaya hidup Anda. 
+              Hasil analisis di atas merupakan prediksi deteksi dini yang dihitung oleh model Graph Neural Network (GraphSAGE) berdasarkan faktor gaya hidup Anda. 
               <b> Hasil ini bukan merupakan diagnosis medis resmi</b>. Untuk diagnosis klinis, konsultasikan secara langsung dengan dokter spesialis atau tenaga medis profesional.
             </p>
           </div>
