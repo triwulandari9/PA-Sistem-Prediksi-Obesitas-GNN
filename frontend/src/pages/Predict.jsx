@@ -4,9 +4,49 @@ import { useAuth } from '../context/AuthContext';
 import { useNotifications } from '../context/NotificationContext';
 import { supabase, isSupabaseConfigured, localDb } from '../lib/supabase';
 import { CustomSelect } from '../components/CustomSelect';
-import { X, AlertCircle } from 'lucide-react';
+import { X, AlertCircle, Check, CheckCircle2 } from 'lucide-react';
 
 const API_BASE_URL = import.meta.env.VITE_API_BASE_URL || '';
+
+// Definisi Pilihan untuk Opsi Biner (Segmented Pills)
+const genderOptions = [
+  { value: '0', label: 'Perempuan' },
+  { value: '1', label: 'Laki-laki' }
+];
+
+const yesNoOptions = [
+  { value: '1', label: 'Ya' },
+  { value: '0', label: 'Tidak' }
+];
+
+// Komponen Pilihan Biner (Segmented Pill Style)
+const BinaryPillGroup = ({ label, name, value, options, onChange }) => (
+  <div>
+    <label className="block font-semibold text-slate-700 mb-1 text-[11px] sm:text-xs">
+      {label}
+    </label>
+    <div className="grid grid-cols-2 gap-2">
+      {options.map((opt) => {
+        const isSelected = String(value) === String(opt.value);
+        return (
+          <button
+            key={opt.value}
+            type="button"
+            onClick={() => onChange(name, opt.value)}
+            className={`py-1.5 px-3 rounded-xl text-xs flex items-center justify-center gap-1.5 transition-all duration-150 border cursor-pointer ${
+              isSelected
+                ? 'bg-[#5dbb7d] text-white border-[#5dbb7d] shadow-sm shadow-[#5dbb7d]/30 font-bold'
+                : 'bg-[#edf2ef]/80 hover:bg-[#e4ece7] text-slate-700 border-slate-200/50 hover:border-slate-300 font-medium'
+            }`}
+          >
+            {isSelected && <Check className="w-3.5 h-3.5 text-white flex-shrink-0" />}
+            <span className="truncate">{opt.label}</span>
+          </button>
+        );
+      })}
+    </div>
+  </div>
+);
 
 // Semua kolom mulai dalam keadaan KOSONG / BELUM TERPILIH
 const initialFormState = {
@@ -112,6 +152,20 @@ export const Predict = () => {
     setFormData(prev => ({ ...prev, [name]: value }));
     if (error) setError('');
   };
+
+  const handlePillChange = (name, val) => {
+    setFormData(prev => ({ ...prev, [name]: String(val) }));
+    if (error) setError('');
+  };
+
+  const allFieldKeys = [
+    'umur', 'jenis_kelamin', 'kat_konsum_alkohol', 'kat_makan_sayur',
+    'frek_aktivitas_fisik', 'jml_konsum_air', 'kat_merokok', 'riwayat_obesitas',
+    'kat_makan_berkalori', 'jml_makan_utama', 'monitoring_kalori',
+    'kat_makan_cemilan', 'durasi_penggunaan_gadget', 'jenis_transportasi'
+  ];
+  const filledCount = allFieldKeys.filter(k => formData[k] !== '' && formData[k] !== null && formData[k] !== undefined).length;
+  const progressPercent = Math.round((filledCount / 14) * 100);
 
   const handlePredict = async (e) => {
     e.preventDefault();
@@ -279,14 +333,40 @@ export const Predict = () => {
   const modalTheme = getModalTheme();
 
   return (
-    <div className="min-h-[calc(100vh-64px)] bg-[#f4f4f4] flex items-center justify-center p-3 sm:p-4 fade-in relative">
+    <div className="min-h-[calc(100vh-64px)] bg-gradient-to-br from-slate-50 via-[#f4f7f5] to-emerald-50/40 flex items-center justify-center p-3 sm:p-5 fade-in relative overflow-hidden">
       
-      {/* FORM CARD PAS 1 LAYAR PENUH (ZERO SCROLL) */}
-      <div className="max-w-4xl w-full bg-white rounded-3xl shadow-xl border border-slate-100 px-6 py-5 sm:px-10 sm:py-6">
+      {/* Elemen Ambient Glow Halus di Sudut Latar Belakang */}
+      <div className="pointer-events-none absolute -top-28 -right-28 w-96 h-96 bg-emerald-200/25 rounded-full blur-3xl" />
+      <div className="pointer-events-none absolute -bottom-28 -left-28 w-96 h-96 bg-teal-200/20 rounded-full blur-3xl" />
+
+      {/* FORM CARD ELEGAN PAS 1 LAYAR (ZERO SCROLL) */}
+      <div className="max-w-4xl w-full bg-white/95 backdrop-blur-md rounded-3xl shadow-[0_20px_50px_rgba(8,112,184,0.06),0_8px_20px_rgba(0,0,0,0.03)] border border-emerald-100/70 px-6 py-5 sm:px-10 sm:py-6 relative z-10">
         
-        <h1 className="text-lg sm:text-xl font-extrabold text-center text-slate-800 mb-4 tracking-tight">
-          Formulir Prediksi Risiko Obesitas
-        </h1>
+        {/* Header Formulir & Progress Status */}
+        <div className="text-center mb-4">
+          <div className="inline-flex items-center gap-2 px-3 py-0.5 rounded-full bg-emerald-50 border border-emerald-200/60 text-emerald-800 text-[11px] font-semibold mb-1 shadow-sm">
+            <span className="w-2 h-2 rounded-full bg-[#5dbb7d] animate-pulse"></span>
+            Skrining Pola Hidup & Kebiasaan Sehari-hari
+          </div>
+          <h1 className="text-lg sm:text-xl font-extrabold text-slate-800 tracking-tight">
+            Formulir Prediksi Risiko Obesitas
+          </h1>
+          <div className="mt-1.5 flex items-center justify-center gap-2.5 text-xs text-slate-500">
+            <span>Kelengkapan:</span>
+            <div className="w-24 bg-slate-200/80 rounded-full h-1.5 overflow-hidden">
+              <div 
+                className="bg-[#5dbb7d] h-full rounded-full transition-all duration-300"
+                style={{ width: `${progressPercent}%` }}
+              />
+            </div>
+            <span className="font-bold text-slate-700">{filledCount}/14</span>
+            {filledCount === 14 && (
+              <span className="inline-flex items-center gap-1 text-[10px] font-bold text-emerald-700 bg-emerald-100/80 px-2 py-0.5 rounded-full">
+                ✓ Lengkap
+              </span>
+            )}
+          </div>
+        </div>
 
         {error && (
           <div className="mb-3 p-2.5 rounded-xl bg-rose-50 border border-rose-200 text-rose-800 text-xs font-semibold flex items-center gap-2">
@@ -303,57 +383,44 @@ export const Predict = () => {
               
               {/* 1. Usia (Dewasa: 18 - 120 tahun) */}
               <div>
-                <label className="block font-bold text-slate-700 mb-1">Usia (Tahun)</label>
-                <input
-                  type="number"
-                  name="umur"
-                  min="18"
-                  max="120"
-                  required
-                  value={formData.umur}
-                  onChange={handleChange}
-                  onKeyDown={(e) => {
-                    if (['-', '+', 'e', 'E', '.'].includes(e.key)) {
-                      e.preventDefault();
-                    }
-                  }}
-                  placeholder="Contoh: 25 (min. 18 th)"
-                  className="w-full px-3.5 py-1.5 rounded-xl bg-[#edf2ef] hover:bg-[#e4ece7] focus:bg-white border border-transparent focus:border-[#5dbb7d] focus:ring-2 focus:ring-[#5dbb7d]/20 text-xs text-slate-800 font-medium transition-all shadow-inner"
-                />
-              </div>
-
-              {/* 2. Jenis Kelamin */}
-              <div>
-                <label className="block font-bold text-slate-700 mb-1">Jenis Kelamin</label>
-                <div className="flex gap-6 items-center pt-0.5">
-                  <label className="flex items-center space-x-2 cursor-pointer text-xs font-medium text-slate-700">
-                    <input
-                      type="radio"
-                      name="jenis_kelamin"
-                      value="0"
-                      checked={formData.jenis_kelamin === '0'}
-                      onChange={handleChange}
-                      className="w-4 h-4 accent-[#5dbb7d] cursor-pointer"
-                    />
-                    <span>Perempuan</span>
-                  </label>
-                  <label className="flex items-center space-x-2 cursor-pointer text-xs font-medium text-slate-700">
-                    <input
-                      type="radio"
-                      name="jenis_kelamin"
-                      value="1"
-                      checked={formData.jenis_kelamin === '1'}
-                      onChange={handleChange}
-                      className="w-4 h-4 accent-[#5dbb7d] cursor-pointer"
-                    />
-                    <span>Laki-laki</span>
-                  </label>
+                <label className="block font-semibold text-slate-700 mb-1 text-[11px] sm:text-xs">
+                  Usia <span className="font-normal text-slate-500">(Tahun)</span>
+                </label>
+                <div className="relative">
+                  <input
+                    type="number"
+                    name="umur"
+                    min="18"
+                    max="120"
+                    required
+                    value={formData.umur}
+                    onChange={handleChange}
+                    onKeyDown={(e) => {
+                      if (['-', '+', 'e', 'E', '.'].includes(e.key)) {
+                        e.preventDefault();
+                      }
+                    }}
+                    placeholder="Contoh: 25 (min. 18 th)"
+                    className="w-full pl-3.5 pr-14 py-1.5 rounded-xl bg-[#edf2ef]/80 hover:bg-[#e4ece7] focus:bg-white border border-slate-200/50 focus:border-[#5dbb7d] focus:ring-2 focus:ring-[#5dbb7d]/20 text-xs text-slate-800 font-medium transition-all shadow-inner"
+                  />
+                  <span className="absolute right-3 top-1/2 -translate-y-1/2 text-[10px] font-bold text-slate-400 pointer-events-none bg-white/80 px-1.5 py-0.5 rounded border border-slate-200/60">
+                    Tahun
+                  </span>
                 </div>
               </div>
 
+              {/* 2. Jenis Kelamin (Segmented Pill) */}
+              <BinaryPillGroup
+                label="Jenis Kelamin"
+                name="jenis_kelamin"
+                value={formData.jenis_kelamin}
+                options={genderOptions}
+                onChange={handlePillChange}
+              />
+
               {/* 3. Konsumsi Alkohol? (Custom Dropdown) */}
               <div>
-                <label className="block font-bold text-slate-700 mb-1">Konsumsi Alkohol?</label>
+                <label className="block font-semibold text-slate-700 mb-1 text-[11px] sm:text-xs">Konsumsi Alkohol?</label>
                 <CustomSelect
                   options={alcoholOptions}
                   value={formData.kat_konsum_alkohol}
@@ -364,7 +431,7 @@ export const Predict = () => {
 
               {/* 4. Makan Sayuran? (Custom Dropdown) */}
               <div>
-                <label className="block font-bold text-slate-700 mb-1">Makan Sayuran?</label>
+                <label className="block font-semibold text-slate-700 mb-1 text-[11px] sm:text-xs">Makan Sayuran?</label>
                 <CustomSelect
                   options={vegetableOptions}
                   value={formData.kat_makan_sayur}
@@ -375,7 +442,7 @@ export const Predict = () => {
 
               {/* 5. Aktivitas Fisik? (Custom Dropdown) */}
               <div>
-                <label className="block font-bold text-slate-700 mb-1">Aktivitas Fisik? (per minggu)</label>
+                <label className="block font-semibold text-slate-700 mb-1 text-[11px] sm:text-xs">Aktivitas Fisik? (per minggu)</label>
                 <CustomSelect
                   options={activityOptions}
                   value={formData.frek_aktivitas_fisik}
@@ -386,7 +453,7 @@ export const Predict = () => {
 
               {/* 6. Konsumsi Air? (Custom Dropdown) */}
               <div>
-                <label className="block font-bold text-slate-700 mb-1">Konsumsi Air? (Liter/hari)</label>
+                <label className="block font-semibold text-slate-700 mb-1 text-[11px] sm:text-xs">Konsumsi Air? (Liter/hari)</label>
                 <CustomSelect
                   options={waterOptions}
                   value={formData.jml_konsum_air}
@@ -395,101 +462,41 @@ export const Predict = () => {
                 />
               </div>
 
-              {/* 7. Pernah Merokok? */}
-              <div>
-                <label className="block font-bold text-slate-700 mb-1">Pernah Merokok?</label>
-                <div className="flex gap-6 items-center pt-0.5">
-                  <label className="flex items-center space-x-2 cursor-pointer text-xs font-medium text-slate-700">
-                    <input
-                      type="radio"
-                      name="kat_merokok"
-                      value="1"
-                      checked={formData.kat_merokok === '1'}
-                      onChange={handleChange}
-                      className="w-4 h-4 accent-[#5dbb7d] cursor-pointer"
-                    />
-                    <span>Ya</span>
-                  </label>
-                  <label className="flex items-center space-x-2 cursor-pointer text-xs font-medium text-slate-700">
-                    <input
-                      type="radio"
-                      name="kat_merokok"
-                      value="0"
-                      checked={formData.kat_merokok === '0'}
-                      onChange={handleChange}
-                      className="w-4 h-4 accent-[#5dbb7d] cursor-pointer"
-                    />
-                    <span>Tidak</span>
-                  </label>
-                </div>
-              </div>
+              {/* 7. Pernah Merokok? (Segmented Pill) */}
+              <BinaryPillGroup
+                label="Pernah Merokok?"
+                name="kat_merokok"
+                value={formData.kat_merokok}
+                options={yesNoOptions}
+                onChange={handlePillChange}
+              />
 
             </div>
 
             {/* KOLOM KANAN */}
             <div className="space-y-2.5">
               
-              {/* 8. Riwayat Keluarga Obesitas? */}
-              <div>
-                <label className="block font-bold text-slate-700 mb-1">Riwayat Keluarga Obesitas?</label>
-                <div className="flex gap-6 items-center pt-0.5">
-                  <label className="flex items-center space-x-2 cursor-pointer text-xs font-medium text-slate-700">
-                    <input
-                      type="radio"
-                      name="riwayat_obesitas"
-                      value="1"
-                      checked={formData.riwayat_obesitas === '1'}
-                      onChange={handleChange}
-                      className="w-4 h-4 accent-[#5dbb7d] cursor-pointer"
-                    />
-                    <span>Ya</span>
-                  </label>
-                  <label className="flex items-center space-x-2 cursor-pointer text-xs font-medium text-slate-700">
-                    <input
-                      type="radio"
-                      name="riwayat_obesitas"
-                      value="0"
-                      checked={formData.riwayat_obesitas === '0'}
-                      onChange={handleChange}
-                      className="w-4 h-4 accent-[#5dbb7d] cursor-pointer"
-                    />
-                    <span>Tidak</span>
-                  </label>
-                </div>
-              </div>
+              {/* 8. Riwayat Keluarga Obesitas? (Segmented Pill) */}
+              <BinaryPillGroup
+                label="Riwayat Keluarga Obesitas?"
+                name="riwayat_obesitas"
+                value={formData.riwayat_obesitas}
+                options={yesNoOptions}
+                onChange={handlePillChange}
+              />
 
-              {/* 9. Sering Makan Berkalori Tinggi? */}
-              <div>
-                <label className="block font-bold text-slate-700 mb-1">Sering Makan Berkalori Tinggi?</label>
-                <div className="flex gap-6 items-center pt-0.5">
-                  <label className="flex items-center space-x-2 cursor-pointer text-xs font-medium text-slate-700">
-                    <input
-                      type="radio"
-                      name="kat_makan_berkalori"
-                      value="1"
-                      checked={formData.kat_makan_berkalori === '1'}
-                      onChange={handleChange}
-                      className="w-4 h-4 accent-[#5dbb7d] cursor-pointer"
-                    />
-                    <span>Ya</span>
-                  </label>
-                  <label className="flex items-center space-x-2 cursor-pointer text-xs font-medium text-slate-700">
-                    <input
-                      type="radio"
-                      name="kat_makan_berkalori"
-                      value="0"
-                      checked={formData.kat_makan_berkalori === '0'}
-                      onChange={handleChange}
-                      className="w-4 h-4 accent-[#5dbb7d] cursor-pointer"
-                    />
-                    <span>Tidak</span>
-                  </label>
-                </div>
-              </div>
+              {/* 9. Sering Makan Berkalori Tinggi? (Segmented Pill) */}
+              <BinaryPillGroup
+                label="Sering Makan Berkalori Tinggi?"
+                name="kat_makan_berkalori"
+                value={formData.kat_makan_berkalori}
+                options={yesNoOptions}
+                onChange={handlePillChange}
+              />
 
               {/* 10. Frekuensi Makan Utama? (Custom Dropdown) */}
               <div>
-                <label className="block font-bold text-slate-700 mb-1">Frekuensi Makan Utama?</label>
+                <label className="block font-semibold text-slate-700 mb-1 text-[11px] sm:text-xs">Frekuensi Makan Utama?</label>
                 <CustomSelect
                   options={mealOptions}
                   value={formData.jml_makan_utama}
@@ -498,38 +505,18 @@ export const Predict = () => {
                 />
               </div>
 
-              {/* 11. Memantau Kalori? */}
-              <div>
-                <label className="block font-bold text-slate-700 mb-1">Memantau Kalori?</label>
-                <div className="flex gap-6 items-center pt-0.5">
-                  <label className="flex items-center space-x-2 cursor-pointer text-xs font-medium text-slate-700">
-                    <input
-                      type="radio"
-                      name="monitoring_kalori"
-                      value="1"
-                      checked={formData.monitoring_kalori === '1'}
-                      onChange={handleChange}
-                      className="w-4 h-4 accent-[#5dbb7d] cursor-pointer"
-                    />
-                    <span>Ya</span>
-                  </label>
-                  <label className="flex items-center space-x-2 cursor-pointer text-xs font-medium text-slate-700">
-                    <input
-                      type="radio"
-                      name="monitoring_kalori"
-                      value="0"
-                      checked={formData.monitoring_kalori === '0'}
-                      onChange={handleChange}
-                      className="w-4 h-4 accent-[#5dbb7d] cursor-pointer"
-                    />
-                    <span>Tidak</span>
-                  </label>
-                </div>
-              </div>
+              {/* 11. Memantau Kalori? (Segmented Pill) */}
+              <BinaryPillGroup
+                label="Memantau Kalori?"
+                name="monitoring_kalori"
+                value={formData.monitoring_kalori}
+                options={yesNoOptions}
+                onChange={handlePillChange}
+              />
 
               {/* 12. Makan diluar jam makan (ngemil) (Custom Dropdown) */}
               <div>
-                <label className="block font-bold text-slate-700 mb-1">Makan diluar jam makan (ngemil)</label>
+                <label className="block font-semibold text-slate-700 mb-1 text-[11px] sm:text-xs">Makan diluar jam makan (ngemil)</label>
                 <CustomSelect
                   options={snackingOptions}
                   value={formData.kat_makan_cemilan}
@@ -538,9 +525,9 @@ export const Predict = () => {
                 />
               </div>
 
-              {/* 13. Durasi Gadget? (Custom Dropdown) */}
+              {/* 13. Durasi Gadget? (jam/hari) (Custom Dropdown) */}
               <div>
-                <label className="block font-bold text-slate-700 mb-1">Durasi Gadget? (jam/hari)</label>
+                <label className="block font-semibold text-slate-700 mb-1 text-[11px] sm:text-xs">Durasi Gadget? (jam/hari)</label>
                 <CustomSelect
                   options={screenTimeOptions}
                   value={formData.durasi_penggunaan_gadget}
@@ -551,7 +538,7 @@ export const Predict = () => {
 
               {/* 14. Transportasi? (Custom Dropdown) */}
               <div>
-                <label className="block font-bold text-slate-700 mb-1">Transportasi Sehari-hari?</label>
+                <label className="block font-semibold text-slate-700 mb-1 text-[11px] sm:text-xs">Transportasi Sehari-hari?</label>
                 <CustomSelect
                   options={transportOptions}
                   value={formData.jenis_transportasi}
@@ -569,16 +556,17 @@ export const Predict = () => {
             <button
               type="submit"
               disabled={loading}
-              className="px-14 py-2.5 rounded-full bg-[#5dbb7d] hover:bg-[#4eaa6d] text-white font-bold text-sm shadow-md shadow-emerald-600/20 hover:shadow-lg transition-all disabled:opacity-50 inline-flex items-center gap-2"
+              className="px-14 py-2.5 rounded-full bg-[#5dbb7d] hover:bg-[#4eaa6d] active:scale-[0.98] text-white font-bold text-sm shadow-md shadow-emerald-600/25 hover:shadow-lg hover:shadow-emerald-600/30 transition-all duration-200 disabled:opacity-50 inline-flex items-center gap-2 group cursor-pointer"
             >
               {loading ? (
                 <>
                   <span className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin"></span>
-                  <span>Menganalisis...</span>
+                  <span>Menganalisis Pola Hidup...</span>
                 </>
               ) : (
                 <>
-                  <span>Prediksi</span>
+                  <span>Prediksi Risiko</span>
+                  <span className="text-white/80 group-hover:translate-x-1 transition-transform">→</span>
                 </>
               )}
             </button>
@@ -588,68 +576,102 @@ export const Predict = () => {
 
       </div>
 
-      {/* POPUP MODAL HASIL PREDIKSI (PERSIS SCREENSHOT FIGMA SEMPRO) */}
+      {/* POPUP MODAL HASIL PREDIKSI (PERSIS SESUAI PROPOSAL DENGAN TAMPILAN LEBIH BERSIH DAN ELEGAN) */}
       {showResultModal && resultData && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-900/50 backdrop-blur-sm fade-in">
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-900/60 backdrop-blur-sm fade-in">
           <div className="w-full max-w-lg bg-white rounded-3xl shadow-2xl overflow-hidden border border-slate-100 transform transition-all animate-in">
             
             {/* Header Modal Berwarna (Kuning = Sedang, Hijau = Rendah, Merah = Tinggi) */}
-            <div className={`${modalTheme.headerBg} px-6 py-3.5 text-white flex items-center justify-between font-bold text-sm shadow-sm`}>
-              <span>Hasil Analisis Risiko Obesitas</span>
+            <div className={`${modalTheme.headerBg} px-6 py-4 text-white flex items-center justify-between font-bold text-sm shadow-sm`}>
+              <span className="tracking-wide">Hasil Analisis Risiko Obesitas</span>
               <button
+                type="button"
                 onClick={handleCloseModal}
-                className="w-6 h-6 rounded-full bg-white/30 hover:bg-white/50 flex items-center justify-center text-white transition-colors"
+                className="w-7 h-7 rounded-full bg-white/20 hover:bg-white/40 flex items-center justify-center text-white transition-colors cursor-pointer"
+                title="Tutup Modal"
               >
                 <X className="w-4 h-4" />
               </button>
             </div>
 
             {/* Modal Body */}
-            <div className="p-8 space-y-4">
+            <div className="p-6 sm:p-7 space-y-4">
               
               {/* Icon & Title */}
-              <div className="flex items-center space-x-4">
-                <div className="text-4xl flex-shrink-0">
+              <div className="flex items-center space-x-3.5">
+                <div className="text-4xl flex-shrink-0 p-2.5 rounded-2xl bg-slate-50 border border-slate-100 shadow-sm">
                   {modalTheme.icon}
                 </div>
                 <div>
-                  <h2 className="text-lg sm:text-xl font-extrabold text-slate-900">
+                  <h2 className="text-lg sm:text-xl font-extrabold text-slate-900 leading-tight">
                     {modalTheme.title}
                   </h2>
+                  <p className="text-xs font-bold text-slate-500 mt-0.5">
+                    Kategori Status: <span style={{ color: modalTheme.color }}>{modalTheme.label}</span>
+                  </p>
                 </div>
               </div>
 
-              {/* Sub-label */}
-              <div>
-                <p className="text-sm font-bold text-slate-800">
-                  {modalTheme.label}
-                </p>
+              {/* Description explanation */}
+              <div className="p-3.5 rounded-2xl bg-slate-50/80 border border-slate-100 text-slate-600 text-xs sm:text-sm leading-relaxed text-justify">
+                {modalTheme.text}
               </div>
 
-              {/* Description explanation */}
-              <p className="text-xs sm:text-sm text-slate-600 leading-relaxed text-justify">
-                {modalTheme.text}
-              </p>
-
-              {/* Probabilities breakdown */}
+              {/* Probabilities breakdown with visual progress bars */}
               {resultData.probabilities && (
-                <div className="pt-2 border-t border-slate-100 flex items-center justify-between text-xs text-slate-500">
-                  <span>Probabilitas:</span>
-                  <div className="flex gap-3 font-semibold">
-                    <span className="text-[#5dbb7d]">Rendah: {resultData.probabilities.low}%</span>
-                    <span className="text-[#f1c40f]">Sedang: {resultData.probabilities.medium}%</span>
-                    <span className="text-[#e74c3c]">Tinggi: {resultData.probabilities.high}%</span>
+                <div className="p-3.5 bg-slate-50/60 rounded-2xl border border-slate-100 space-y-2">
+                  <div className="flex items-center justify-between text-xs font-bold text-slate-700">
+                    <span>Tingkat Kepastian Model GraphSAGE</span>
+                  </div>
+                  <div className="grid grid-cols-3 gap-2">
+                    <div className="p-2 rounded-xl bg-emerald-50/80 border border-emerald-200/60 text-center">
+                      <p className="text-[11px] font-medium text-emerald-700">Rendah</p>
+                      <p className="text-sm font-bold text-emerald-800">{resultData.probabilities.low ?? 0}%</p>
+                      <div className="w-full bg-emerald-200/60 h-1.5 rounded-full overflow-hidden mt-1">
+                        <div className="bg-emerald-500 h-full rounded-full transition-all duration-500" style={{ width: `${resultData.probabilities.low ?? 0}%` }} />
+                      </div>
+                    </div>
+                    <div className="p-2 rounded-xl bg-amber-50/80 border border-amber-200/60 text-center">
+                      <p className="text-[11px] font-medium text-amber-700">Sedang</p>
+                      <p className="text-sm font-bold text-amber-800">{resultData.probabilities.medium ?? 0}%</p>
+                      <div className="w-full bg-amber-200/60 h-1.5 rounded-full overflow-hidden mt-1">
+                        <div className="bg-amber-500 h-full rounded-full transition-all duration-500" style={{ width: `${resultData.probabilities.medium ?? 0}%` }} />
+                      </div>
+                    </div>
+                    <div className="p-2 rounded-xl bg-rose-50/80 border border-rose-200/60 text-center">
+                      <p className="text-[11px] font-medium text-rose-700">Tinggi</p>
+                      <p className="text-sm font-bold text-rose-800">{resultData.probabilities.high ?? 0}%</p>
+                      <div className="w-full bg-rose-200/60 h-1.5 rounded-full overflow-hidden mt-1">
+                        <div className="bg-rose-500 h-full rounded-full transition-all duration-500" style={{ width: `${resultData.probabilities.high ?? 0}%` }} />
+                      </div>
+                    </div>
                   </div>
                 </div>
               )}
 
+              {/* Recommendations if any */}
+              {resultData.recommendations && resultData.recommendations.length > 0 && (
+                <div className="p-3.5 bg-emerald-50/60 rounded-2xl border border-emerald-100 space-y-1.5">
+                  <p className="text-xs font-bold text-emerald-900 flex items-center gap-1.5">
+                    <CheckCircle2 className="w-4 h-4 text-emerald-600 flex-shrink-0" />
+                    Saran & Rekomendasi Pola Hidup:
+                  </p>
+                  <ul className="text-xs text-slate-700 space-y-1 pl-5 list-disc marker:text-emerald-500">
+                    {resultData.recommendations.map((rec, i) => (
+                      <li key={i}>{rec}</li>
+                    ))}
+                  </ul>
+                </div>
+              )}
+
               {/* Tombol Tutup */}
-              <div className="pt-2 text-center">
+              <div className="pt-2 flex justify-center">
                 <button
+                  type="button"
                   onClick={handleCloseModal}
-                  className="px-8 py-2 rounded-full bg-slate-100 hover:bg-slate-200 text-slate-700 font-semibold text-xs transition-colors"
+                  className="px-10 py-2.5 rounded-full bg-slate-800 hover:bg-slate-900 text-white font-bold text-xs shadow-md transition-all cursor-pointer"
                 >
-                  Tutup
+                  Selesai & Tutup
                 </button>
               </div>
 

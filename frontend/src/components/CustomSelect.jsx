@@ -38,7 +38,9 @@ export const CustomSelect = ({
         className={`w-full flex items-center justify-between px-3.5 py-1.5 rounded-xl border text-xs transition-all shadow-sm focus:outline-none ${
           isOpen
             ? 'bg-white border-[#5dbb7d] ring-2 ring-[#5dbb7d]/20 text-slate-900'
-            : 'bg-[#edf2ef] hover:bg-[#e4ece7] border-transparent text-slate-800'
+            : selectedOption
+            ? 'bg-white border-slate-200 text-slate-800 font-medium hover:border-slate-300'
+            : 'bg-[#edf2ef]/80 hover:bg-[#e4ece7] border-slate-200/50 text-slate-800'
         }`}
       >
         <span className={`truncate ${!selectedOption ? 'text-slate-400 font-normal italic' : 'text-slate-800 font-medium'}`}>
@@ -51,9 +53,9 @@ export const CustomSelect = ({
         />
       </button>
 
-      {/* Floating Custom Menu Popover (MEMBUKA KE BAWAH, SEMUA ITEM TAMPIL UTUH TANPA SCROLL) */}
+      {/* Floating Custom Menu Popover */}
       {isOpen && (
-        <div className="absolute z-50 left-0 right-0 top-full mt-1 bg-white rounded-2xl shadow-2xl border border-slate-100 py-1 overflow-visible animate-in">
+        <div className="absolute z-50 left-0 right-0 top-full mt-1 bg-white rounded-2xl shadow-xl border border-slate-100 py-1 overflow-visible animate-in">
           <div className="divide-y divide-slate-50">
             {options.map((option) => {
               const isSelected = String(option.value) === String(value);
