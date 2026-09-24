@@ -153,7 +153,7 @@ export const History = () => {
 
                         <td className="py-4 px-6 font-medium text-slate-800">
                           <div className="flex items-center space-x-2">
-                            <span>{formatHasilPrediksi(pred.prediction || pred.risk_level)}</span>
+                            <span>{formatHasilPrediksi(pred.hasil_prediksi || pred.risk_level || pred.prediction)}</span>
                             <button
                               onClick={() => handleOpenDetail(pred)}
                               className="text-[#5dbb7d] hover:text-[#065f46] p-1 rounded-md transition-colors"

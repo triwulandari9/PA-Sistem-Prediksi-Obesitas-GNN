@@ -43,6 +43,32 @@ class TestObesityFlaskAPI(unittest.TestCase):
         self.assertTrue(len(data['recommendations']) > 0)
         print(f"[PASSED] Healthy sample prediction: {data['prediction']} ({data['risk_level']}), Probs: {data['probabilities']}")
 
+    def test_prediction_indonesian_payload(self):
+        # Profil uji dengan 14 key murni Bahasa Indonesia sesuai ERD
+        payload = {
+            "umur": 23,
+            "jenis_kelamin": 1,
+            "riwayat_obesitas": 0,
+            "kat_makan_berkalori": 0,
+            "kat_makan_sayur": 3,
+            "jml_makan_utama": 3,
+            "kat_makan_cemilan": 2,
+            "kat_merokok": 0,
+            "jml_konsum_air": 3,
+            "monitoring_kalori": 1,
+            "frek_aktivitas_fisik": 2,
+            "durasi_penggunaan_gadget": 1,
+            "kat_konsum_alkohol": 3,
+            "jenis_transportasi": 4
+        }
+        response = self.app.post('/api/predict', data=json.dumps(payload), content_type='application/json')
+        self.assertEqual(response.status_code, 200)
+        data = json.loads(response.data)
+        self.assertIn(data['prediction'], ['LOW', 'MEDIUM', 'HIGH'])
+        self.assertEqual(data['input_features']['umur'], 23)
+        self.assertEqual(data['input_features']['jenis_kelamin'], 1)
+        print(f"[PASSED] Indonesian ERD payload test OK: {data['prediction']} ({data['risk_level']})")
+
     def test_prediction_high_risk_profile(self):
         # Profil gaya hidup berisiko
         payload = {

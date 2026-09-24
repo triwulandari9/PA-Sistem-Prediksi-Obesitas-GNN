@@ -26,26 +26,31 @@ export const AuthProvider = ({ children }) => {
     const cleanUser = username.trim();
     const cleanUserLower = cleanUser.toLowerCase();
 
-    // 1. Cek Akun Admin Khusus Pilihan Anda
-    const isAdminAccount = 
-      (cleanUserLower === 'sariadmin' && password === 'Saricomel9!') ||
-      (cleanUserLower === 'sari' && password === 'triwjsari09') ||
-      (cleanUserLower === 'admin' && password === 'SayaSari') ||
-      (cleanUserLower === 'admin' && password === 'admin123');
-
-    if (isAdminAccount) {
-      const adminUser = {
-        id: 'admin-sari-id',
-        name: cleanUser,
-        role: 'admin'
-      };
-      setUser(adminUser);
-      localStorage.setItem('pa_gnn_auth_user', JSON.stringify(adminUser));
-      return adminUser;
-    }
-
     if (isSupabaseConfigured && supabase) {
-      // Cari di tabel profiles Supabase (Case-Insensitive pada Nama Pengguna)
+      // 1. Cek di tabel 'admin' Supabase terlebih dahulu (Sesuai Entitas Admin di ERD)
+      try {
+        const { data: adminData } = await supabase
+          .from('admin')
+          .select('*')
+          .ilike('admin_nama', cleanUser)
+          .eq('admin_kata_sandi', password)
+          .maybeSingle();
+
+        if (adminData) {
+          const adminUser = {
+            id: adminData.admin_id,
+            name: adminData.admin_nama,
+            role: 'admin'
+          };
+          setUser(adminUser);
+          localStorage.setItem('pa_gnn_auth_user', JSON.stringify(adminUser));
+          return adminUser;
+        }
+      } catch (errAdmin) {
+        console.warn('Cek tabel admin Supabase:', errAdmin.message);
+      }
+
+      // 2. Cek di tabel 'profiles' Supabase (Sesuai Entitas Pengguna di ERD)
       const { data, error } = await supabase
         .from('profiles')
         .select('*')
@@ -58,20 +63,36 @@ export const AuthProvider = ({ children }) => {
         throw new Error('Gagal terhubung ke database.');
       }
 
-      if (!data) {
-        throw new Error('Nama Pengguna atau Kata Sandi salah. Silakan periksa kembali.');
+      if (data) {
+        const loggedInUser = {
+          id: data.id,
+          name: data.name,
+          role: data.role || 'user'
+        };
+        setUser(loggedInUser);
+        localStorage.setItem('pa_gnn_auth_user', JSON.stringify(loggedInUser));
+        return loggedInUser;
       }
+    }
 
-      const loggedInUser = {
-        id: data.id,
-        name: data.name,
-        role: data.role || 'user'
+    // 3. Fallback Akun Admin Khusus (Jaga-jaga jika tabel belum di-create / offline)
+    const isAdminAccount =
+      (cleanUserLower === 'sari' && (password === '111111' || password === 'triwjsari09')) ||
+      (cleanUserLower === 'sariadmin' && password === 'Saricomel9!') ||
+      (cleanUserLower === 'admin' && (password === 'SayaSari' || password === 'admin123'));
+
+    if (isAdminAccount) {
+      const adminUser = {
+        id: 'admin-sari-id',
+        name: cleanUser,
+        role: 'admin'
       };
+      setUser(adminUser);
+      localStorage.setItem('pa_gnn_auth_user', JSON.stringify(adminUser));
+      return adminUser;
+    }
 
-      setUser(loggedInUser);
-      localStorage.setItem('pa_gnn_auth_user', JSON.stringify(loggedInUser));
-      return loggedInUser;
-    } else {
+    if (!isSupabaseConfigured || !supabase) {
       // Fallback ke Local DB jika Supabase belum terhubung
       const { data, error } = await localDb.signIn({ email: cleanUser, password });
       if (error) throw error;
@@ -79,6 +100,8 @@ export const AuthProvider = ({ children }) => {
       localStorage.setItem('pa_gnn_auth_user', JSON.stringify(data.user));
       return data.user;
     }
+
+    throw new Error('Nama Pengguna atau Kata Sandi salah. Silakan periksa kembali.');
   };
 
   // REGISTER MENGGUNAKAN NAMA PENGGUNA & KATA SANDI (SESUAI ERD)

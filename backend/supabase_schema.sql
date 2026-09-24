@@ -13,43 +13,79 @@ EXCEPTION
     WHEN duplicate_object THEN null;
 END $$;
 
--- 3. TABEL PROFILES / PENGGUNA (Terhubung dengan Supabase Auth)
+-- 3. TABEL ADMIN (Sesuai Entitas Admin di ERD Skripsi)
+CREATE TABLE IF NOT EXISTS public.admin (
+    admin_id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
+    admin_nama TEXT NOT NULL UNIQUE,
+    admin_kata_sandi TEXT NOT NULL,
+    created_at TIMESTAMP WITH TIME ZONE DEFAULT timezone('utc'::text, now()) NOT NULL
+);
+
+-- Akun Admin Default Sesuai Kredensial Sari
+INSERT INTO public.admin (admin_nama, admin_kata_sandi)
+VALUES ('Sari', '111111')
+ON CONFLICT (admin_nama) DO NOTHING;
+
+-- 4. TABEL PENGGUNA (Entitas Pengguna di ERD Skripsi / public.profiles)
 CREATE TABLE IF NOT EXISTS public.profiles (
-    id UUID PRIMARY KEY REFERENCES auth.users(id) ON DELETE CASCADE,
+    id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
     name TEXT NOT NULL,
-    email TEXT NOT NULL UNIQUE,
+    email TEXT,
+    password TEXT,
     role user_role NOT NULL DEFAULT 'user',
     created_at TIMESTAMP WITH TIME ZONE DEFAULT timezone('utc'::text, now()) NOT NULL
 );
 
--- 4. TABEL PREDIKSI_RISIKO (Sesuai dengan 14 Atribut di ERD)
+-- 4. TABEL PREDIKSI (Sesuai dengan 14 Atribut di ERD Bahasa Indonesia)
 CREATE TABLE IF NOT EXISTS public.predictions (
     id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
     user_id UUID NOT NULL REFERENCES public.profiles(id) ON DELETE CASCADE,
     
-    -- 14 Atribut Input Sesuai ERD
-    age NUMERIC(5, 1) NOT NULL,                           -- umur
-    gender SMALLINT NOT NULL,                             -- jenis_kelamin (0: Wanita, 1: Pria)
-    family_history SMALLINT NOT NULL,                     -- riwayat_obesitas (0: Tidak, 1: Ya)
-    high_calorie_food SMALLINT NOT NULL,                  -- kat_makan_berkalori (0: Tidak, 1: Ya)
-    vegetable_consumption NUMERIC(3, 1) NOT NULL,        -- kat_makan_sayur (1: Tidak, 2: Kadang, 3: Selalu)
-    meal_per_day NUMERIC(3, 1) NOT NULL,                  -- jml_makan_utama (1: 1-2x, 2: 3x, 3: >3x)
-    snacking SMALLINT NOT NULL,                           -- kat_makan_cemilan (0: Always, 1: Frequently, 2: Sometimes, 3: no)
-    smoking SMALLINT NOT NULL,                            -- kat_merokok (0: Tidak, 1: Ya)
-    water_intake NUMERIC(3, 1) NOT NULL,                  -- jml_konsum_air (1: <1L, 2: 1-2L, 3: >2L)
-    calorie_monitoring SMALLINT NOT NULL,                 -- monitoring_kalori (0: Tidak, 1: Ya)
-    physical_activity NUMERIC(3, 1) NOT NULL,             -- frek_aktivitas_fisik (0: 0h, 1: 1-2h, 2: 2-4h, 3: 4-5h)
-    screen_time NUMERIC(3, 1) NOT NULL,                   -- durasi_penggunaan_gadget (0: 0-2j, 1: 3-5j, 2: >5j)
-    alcohol SMALLINT NOT NULL,                            -- kat_konsum_alkohol (0: Always, 1: Frequently, 2: Sometimes, 3: no)
-    transport SMALLINT NOT NULL,                          -- jenis_transportasi (0: Mobil, 1: Sepeda, 2: Motor, 3: Umum, 4: Jalan)
+    -- 14 Atribut Input Sesuai ERD Skripsi (Bahasa Indonesia)
+    umur NUMERIC(5, 1) NOT NULL,                          -- Usia responden (>= 18 tahun)
+    jenis_kelamin SMALLINT NOT NULL,                      -- 0: Wanita, 1: Pria
+    riwayat_obesitas SMALLINT NOT NULL,                   -- 0: Tidak, 1: Ya
+    kat_makan_berkalori SMALLINT NOT NULL,                -- 0: Tidak, 1: Ya
+    kat_makan_sayur NUMERIC(3, 1) NOT NULL,               -- 1: Tidak Pernah, 2: Kadang, 3: Selalu
+    jml_makan_utama NUMERIC(3, 1) NOT NULL,               -- 1: 1-2x, 2: 3x, 3: >3x
+    kat_makan_cemilan SMALLINT NOT NULL,                  -- 0: Selalu, 1: Sering, 2: Kadang, 3: Tidak Pernah
+    kat_merokok SMALLINT NOT NULL,                        -- 0: Tidak, 1: Ya
+    jml_konsum_air NUMERIC(3, 1) NOT NULL,                -- 1: <1L, 2: 1-2L, 3: >2L
+    monitoring_kalori SMALLINT NOT NULL,                  -- 0: Tidak, 1: Ya
+    frek_aktivitas_fisik NUMERIC(3, 1) NOT NULL,          -- 0: 0 hari, 1: 1-2 hari, 2: 2-4 hari, 3: 4-5 hari
+    durasi_penggunaan_gadget NUMERIC(3, 1) NOT NULL,      -- 0: 0-2 jam, 1: 3-5 jam, 2: >5 jam
+    kat_konsum_alkohol SMALLINT NOT NULL,                 -- 0: Selalu, 1: Sering, 2: Kadang, 3: Tidak Minum
+    jenis_transportasi SMALLINT NOT NULL,                 -- 0: Mobil, 1: Sepeda, 2: Motor, 3: Umum, 4: Jalan
 
-    -- Hasil Prediksi Model & Waktu
-    prediction TEXT NOT NULL,                             -- hasil_prediksi ('LOW', 'MEDIUM', 'HIGH')
-    risk_level TEXT NOT NULL,                             -- ('Rendah', 'Sedang', 'Tinggi')
+    -- Hasil Prediksi Model & Waktu (Sesuai ERD Skripsi)
+    hasil_prediksi TEXT NOT NULL,                         -- ('Rendah', 'Sedang', 'Tinggi')
     probabilities JSONB,                                  -- probabilitas softmax
     recommendations JSONB,                                -- saran rekomendasi pola hidup
     created_at TIMESTAMP WITH TIME ZONE DEFAULT timezone('utc'::text, now()) NOT NULL -- tgl_prediksi
 );
+
+-- CATATAN MIGRASI: JIKA INGIN MERAPIKAN TABEL SUPABASE LAMA:
+/*
+-- 1. Rename kolom ke Bahasa Indonesia
+ALTER TABLE public.predictions RENAME COLUMN age TO umur;
+ALTER TABLE public.predictions RENAME COLUMN gender TO jenis_kelamin;
+ALTER TABLE public.predictions RENAME COLUMN family_history TO riwayat_obesitas;
+ALTER TABLE public.predictions RENAME COLUMN high_calorie_food TO kat_makan_berkalori;
+ALTER TABLE public.predictions RENAME COLUMN vegetable_consumption TO kat_makan_sayur;
+ALTER TABLE public.predictions RENAME COLUMN meal_per_day TO jml_makan_utama;
+ALTER TABLE public.predictions RENAME COLUMN snacking TO kat_makan_cemilan;
+ALTER TABLE public.predictions RENAME COLUMN smoking TO kat_merokok;
+ALTER TABLE public.predictions RENAME COLUMN water_intake TO jml_konsum_air;
+ALTER TABLE public.predictions RENAME COLUMN calorie_monitoring TO monitoring_kalori;
+ALTER TABLE public.predictions RENAME COLUMN physical_activity TO frek_aktivitas_fisik;
+ALTER TABLE public.predictions RENAME COLUMN screen_time TO durasi_penggunaan_gadget;
+ALTER TABLE public.predictions RENAME COLUMN alcohol TO kat_konsum_alkohol;
+ALTER TABLE public.predictions RENAME COLUMN transport TO jenis_transportasi;
+
+-- 2. Jadikan 1 kolom hasil prediksi murni Bahasa Indonesia
+ALTER TABLE public.predictions RENAME COLUMN risk_level TO hasil_prediksi;
+ALTER TABLE public.predictions DROP COLUMN IF EXISTS prediction;
+*/
 
 -- 5. INDEX UNTUK PERFORMA QUERY
 CREATE INDEX IF NOT EXISTS idx_predictions_user_id ON public.predictions(user_id);

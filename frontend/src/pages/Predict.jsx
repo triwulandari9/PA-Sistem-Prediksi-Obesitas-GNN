@@ -10,20 +10,20 @@ const API_BASE_URL = import.meta.env.VITE_API_BASE_URL || '';
 
 // Semua kolom mulai dalam keadaan KOSONG / BELUM TERPILIH
 const initialFormState = {
-  age: '',                  // Usia
-  gender: '',               // 0: Perempuan, 1: Laki-laki
-  alcohol: '',              // 3: Tidak, 2: Kadang, 1: Sering, 0: Selalu
-  vegetable_consumption: '',// 1: Tidak, 2: Kadang, 3: Selalu
-  physical_activity: '',    // 0: 0h, 1: 1-2h, 2: 2-4h, 3: 4-5h
-  water_intake: '',         // 1: <1L, 2: 1-2L, 3: >2L
-  smoking: '',              // 0: Tidak, 1: Ya
-  family_history: '',       // 0: Tidak, 1: Ya
-  high_calorie_food: '',    // 0: Tidak, 1: Ya
-  meal_per_day: '',         // 1: 1-2x, 2: 3x, 3: >3x
-  calorie_monitoring: '',   // 0: Tidak, 1: Ya
-  snacking: '',             // 3: Tidak, 2: Kadang, 1: Sering, 0: Selalu
-  screen_time: '',          // 0: 0-2j, 1: 3-5j, 2: >5j
-  transport: ''             // 0: Mobil, 1: Sepeda, 2: Motor, 3: Umum, 4: Jalan
+  umur: '',                     // Usia (Dewasa >= 18 tahun)
+  jenis_kelamin: '',            // 0: Perempuan, 1: Laki-laki
+  kat_konsum_alkohol: '',       // 3: Tidak, 2: Kadang, 1: Sering, 0: Selalu
+  kat_makan_sayur: '',          // 1: Tidak, 2: Kadang, 3: Selalu
+  frek_aktivitas_fisik: '',     // 0: 0h, 1: 1-2h, 2: 2-4h, 3: 4-5h
+  jml_konsum_air: '',           // 1: <1L, 2: 1-2L, 3: >2L
+  kat_merokok: '',              // 0: Tidak, 1: Ya
+  riwayat_obesitas: '',         // 0: Tidak, 1: Ya
+  kat_makan_berkalori: '',      // 0: Tidak, 1: Ya
+  jml_makan_utama: '',          // 1: 1-2x, 2: 3x, 3: >3x
+  monitoring_kalori: '',        // 0: Tidak, 1: Ya
+  kat_makan_cemilan: '',        // 3: Tidak, 2: Kadang, 1: Sering, 0: Selalu
+  durasi_penggunaan_gadget: '', // 0: 0-2j, 1: 3-5j, 2: >5j
+  jenis_transportasi: ''        // 0: Mobil, 1: Sepeda, 2: Motor, 3: Umum, 4: Jalan
 };
 
 // Dropdown Options Definition (Murni Bahasa Indonesia)
@@ -101,10 +101,10 @@ export const Predict = () => {
     const { name, value } = e.target;
     
     // Validasi khusus usia: Hanya angka positif, tidak bisa minus (-), maksimal 120 tahun
-    if (name === 'age') {
+    if (name === 'umur' || name === 'age') {
       const cleanAge = value.replace(/[^0-9]/g, '');
       if (cleanAge !== '' && Number(cleanAge) > 120) return;
-      setFormData(prev => ({ ...prev, age: cleanAge }));
+      setFormData(prev => ({ ...prev, umur: cleanAge }));
       if (error) setError('');
       return;
     }
@@ -117,8 +117,8 @@ export const Predict = () => {
     e.preventDefault();
 
     // 1. Cek Kelengkapan Usia
-    const ageNum = Number(formData.age);
-    if (!formData.age || isNaN(ageNum) || ageNum <= 0) {
+    const ageNum = Number(formData.umur);
+    if (!formData.umur || isNaN(ageNum) || ageNum <= 0) {
       setError('Usia wajib diisi dengan angka valid!');
       return;
     }
@@ -135,9 +135,9 @@ export const Predict = () => {
 
     // 2. Cek Kelengkapan Seluruh 14 Parameter
     const requiredKeys = [
-      'gender', 'alcohol', 'vegetable_consumption', 'physical_activity',
-      'water_intake', 'smoking', 'family_history', 'high_calorie_food',
-      'meal_per_day', 'calorie_monitoring', 'snacking', 'screen_time', 'transport'
+      'jenis_kelamin', 'kat_konsum_alkohol', 'kat_makan_sayur', 'frek_aktivitas_fisik',
+      'jml_konsum_air', 'kat_merokok', 'riwayat_obesitas', 'kat_makan_berkalori',
+      'jml_makan_utama', 'monitoring_kalori', 'kat_makan_cemilan', 'durasi_penggunaan_gadget', 'jenis_transportasi'
     ];
 
     const hasEmptyField = requiredKeys.some(key => formData[key] === '');
@@ -150,20 +150,20 @@ export const Predict = () => {
     setError('');
 
     const payload = {
-      gender: Number(formData.gender),
-      age: Number(formData.age),
-      family_history: Number(formData.family_history),
-      high_calorie_food: Number(formData.high_calorie_food),
-      vegetable_consumption: Number(formData.vegetable_consumption),
-      meal_per_day: Number(formData.meal_per_day),
-      snacking: Number(formData.snacking),
-      smoking: Number(formData.smoking),
-      water_intake: Number(formData.water_intake),
-      calorie_monitoring: Number(formData.calorie_monitoring),
-      physical_activity: Number(formData.physical_activity),
-      screen_time: Number(formData.screen_time),
-      alcohol: Number(formData.alcohol),
-      transport: Number(formData.transport)
+      umur: Number(formData.umur),
+      jenis_kelamin: Number(formData.jenis_kelamin),
+      riwayat_obesitas: Number(formData.riwayat_obesitas),
+      kat_makan_berkalori: Number(formData.kat_makan_berkalori),
+      kat_makan_sayur: Number(formData.kat_makan_sayur),
+      jml_makan_utama: Number(formData.jml_makan_utama),
+      kat_makan_cemilan: Number(formData.kat_makan_cemilan),
+      kat_merokok: Number(formData.kat_merokok),
+      jml_konsum_air: Number(formData.jml_konsum_air),
+      monitoring_kalori: Number(formData.monitoring_kalori),
+      frek_aktivitas_fisik: Number(formData.frek_aktivitas_fisik),
+      durasi_penggunaan_gadget: Number(formData.durasi_penggunaan_gadget),
+      kat_konsum_alkohol: Number(formData.kat_konsum_alkohol),
+      jenis_transportasi: Number(formData.jenis_transportasi)
     };
 
     try {
@@ -182,12 +182,11 @@ export const Predict = () => {
       const predictionResult = res.data;
       setResultData(predictionResult);
 
-      // 2. Simpan ke database Supabase
+      // 2. Simpan ke database Supabase (Murni Bahasa Indonesia sesuai ERD)
       const recordToSave = {
         user_id: user?.id || 'guest',
         ...payload,
-        prediction: predictionResult.prediction,
-        risk_level: predictionResult.risk_level,
+        hasil_prediksi: predictionResult.risk_level, // 'Rendah', 'Sedang', 'Tinggi'
         probabilities: predictionResult.probabilities,
         recommendations: predictionResult.recommendations,
       };
@@ -296,11 +295,11 @@ export const Predict = () => {
                 <label className="block font-bold text-slate-700 mb-1">Usia (Tahun)</label>
                 <input
                   type="number"
-                  name="age"
+                  name="umur"
                   min="18"
                   max="120"
                   required
-                  value={formData.age}
+                  value={formData.umur}
                   onChange={handleChange}
                   onKeyDown={(e) => {
                     if (['-', '+', 'e', 'E', '.'].includes(e.key)) {
@@ -319,9 +318,9 @@ export const Predict = () => {
                   <label className="flex items-center space-x-2 cursor-pointer text-xs font-medium text-slate-700">
                     <input
                       type="radio"
-                      name="gender"
+                      name="jenis_kelamin"
                       value="0"
-                      checked={formData.gender === '0'}
+                      checked={formData.jenis_kelamin === '0'}
                       onChange={handleChange}
                       className="w-4 h-4 accent-[#5dbb7d] cursor-pointer"
                     />
@@ -330,9 +329,9 @@ export const Predict = () => {
                   <label className="flex items-center space-x-2 cursor-pointer text-xs font-medium text-slate-700">
                     <input
                       type="radio"
-                      name="gender"
+                      name="jenis_kelamin"
                       value="1"
-                      checked={formData.gender === '1'}
+                      checked={formData.jenis_kelamin === '1'}
                       onChange={handleChange}
                       className="w-4 h-4 accent-[#5dbb7d] cursor-pointer"
                     />
@@ -346,9 +345,9 @@ export const Predict = () => {
                 <label className="block font-bold text-slate-700 mb-1">Konsumsi Alkohol?</label>
                 <CustomSelect
                   options={alcoholOptions}
-                  value={formData.alcohol}
+                  value={formData.kat_konsum_alkohol}
                   placeholder="Pilih kebiasaan alkohol..."
-                  onChange={(val) => handleCustomSelectChange('alcohol', val)}
+                  onChange={(val) => handleCustomSelectChange('kat_konsum_alkohol', val)}
                 />
               </div>
 
@@ -357,9 +356,9 @@ export const Predict = () => {
                 <label className="block font-bold text-slate-700 mb-1">Makan Sayuran?</label>
                 <CustomSelect
                   options={vegetableOptions}
-                  value={formData.vegetable_consumption}
+                  value={formData.kat_makan_sayur}
                   placeholder="Pilih frekuensi makan sayur..."
-                  onChange={(val) => handleCustomSelectChange('vegetable_consumption', val)}
+                  onChange={(val) => handleCustomSelectChange('kat_makan_sayur', val)}
                 />
               </div>
 
@@ -368,9 +367,9 @@ export const Predict = () => {
                 <label className="block font-bold text-slate-700 mb-1">Aktivitas Fisik? (per minggu)</label>
                 <CustomSelect
                   options={activityOptions}
-                  value={formData.physical_activity}
+                  value={formData.frek_aktivitas_fisik}
                   placeholder="Pilih intensitas aktivitas..."
-                  onChange={(val) => handleCustomSelectChange('physical_activity', val)}
+                  onChange={(val) => handleCustomSelectChange('frek_aktivitas_fisik', val)}
                 />
               </div>
 
@@ -379,9 +378,9 @@ export const Predict = () => {
                 <label className="block font-bold text-slate-700 mb-1">Konsumsi Air? (Liter/hari)</label>
                 <CustomSelect
                   options={waterOptions}
-                  value={formData.water_intake}
+                  value={formData.jml_konsum_air}
                   placeholder="Pilih jumlah konsumsi air..."
-                  onChange={(val) => handleCustomSelectChange('water_intake', val)}
+                  onChange={(val) => handleCustomSelectChange('jml_konsum_air', val)}
                 />
               </div>
 
@@ -392,9 +391,9 @@ export const Predict = () => {
                   <label className="flex items-center space-x-2 cursor-pointer text-xs font-medium text-slate-700">
                     <input
                       type="radio"
-                      name="smoking"
+                      name="kat_merokok"
                       value="1"
-                      checked={formData.smoking === '1'}
+                      checked={formData.kat_merokok === '1'}
                       onChange={handleChange}
                       className="w-4 h-4 accent-[#5dbb7d] cursor-pointer"
                     />
@@ -403,9 +402,9 @@ export const Predict = () => {
                   <label className="flex items-center space-x-2 cursor-pointer text-xs font-medium text-slate-700">
                     <input
                       type="radio"
-                      name="smoking"
+                      name="kat_merokok"
                       value="0"
-                      checked={formData.smoking === '0'}
+                      checked={formData.kat_merokok === '0'}
                       onChange={handleChange}
                       className="w-4 h-4 accent-[#5dbb7d] cursor-pointer"
                     />
@@ -426,9 +425,9 @@ export const Predict = () => {
                   <label className="flex items-center space-x-2 cursor-pointer text-xs font-medium text-slate-700">
                     <input
                       type="radio"
-                      name="family_history"
+                      name="riwayat_obesitas"
                       value="1"
-                      checked={formData.family_history === '1'}
+                      checked={formData.riwayat_obesitas === '1'}
                       onChange={handleChange}
                       className="w-4 h-4 accent-[#5dbb7d] cursor-pointer"
                     />
@@ -437,9 +436,9 @@ export const Predict = () => {
                   <label className="flex items-center space-x-2 cursor-pointer text-xs font-medium text-slate-700">
                     <input
                       type="radio"
-                      name="family_history"
+                      name="riwayat_obesitas"
                       value="0"
-                      checked={formData.family_history === '0'}
+                      checked={formData.riwayat_obesitas === '0'}
                       onChange={handleChange}
                       className="w-4 h-4 accent-[#5dbb7d] cursor-pointer"
                     />
@@ -455,9 +454,9 @@ export const Predict = () => {
                   <label className="flex items-center space-x-2 cursor-pointer text-xs font-medium text-slate-700">
                     <input
                       type="radio"
-                      name="high_calorie_food"
+                      name="kat_makan_berkalori"
                       value="1"
-                      checked={formData.high_calorie_food === '1'}
+                      checked={formData.kat_makan_berkalori === '1'}
                       onChange={handleChange}
                       className="w-4 h-4 accent-[#5dbb7d] cursor-pointer"
                     />
@@ -466,9 +465,9 @@ export const Predict = () => {
                   <label className="flex items-center space-x-2 cursor-pointer text-xs font-medium text-slate-700">
                     <input
                       type="radio"
-                      name="high_calorie_food"
+                      name="kat_makan_berkalori"
                       value="0"
-                      checked={formData.high_calorie_food === '0'}
+                      checked={formData.kat_makan_berkalori === '0'}
                       onChange={handleChange}
                       className="w-4 h-4 accent-[#5dbb7d] cursor-pointer"
                     />
@@ -482,9 +481,9 @@ export const Predict = () => {
                 <label className="block font-bold text-slate-700 mb-1">Frekuensi Makan Utama?</label>
                 <CustomSelect
                   options={mealOptions}
-                  value={formData.meal_per_day}
+                  value={formData.jml_makan_utama}
                   placeholder="Pilih frekuensi makan..."
-                  onChange={(val) => handleCustomSelectChange('meal_per_day', val)}
+                  onChange={(val) => handleCustomSelectChange('jml_makan_utama', val)}
                 />
               </div>
 
@@ -495,9 +494,9 @@ export const Predict = () => {
                   <label className="flex items-center space-x-2 cursor-pointer text-xs font-medium text-slate-700">
                     <input
                       type="radio"
-                      name="calorie_monitoring"
+                      name="monitoring_kalori"
                       value="1"
-                      checked={formData.calorie_monitoring === '1'}
+                      checked={formData.monitoring_kalori === '1'}
                       onChange={handleChange}
                       className="w-4 h-4 accent-[#5dbb7d] cursor-pointer"
                     />
@@ -506,9 +505,9 @@ export const Predict = () => {
                   <label className="flex items-center space-x-2 cursor-pointer text-xs font-medium text-slate-700">
                     <input
                       type="radio"
-                      name="calorie_monitoring"
+                      name="monitoring_kalori"
                       value="0"
-                      checked={formData.calorie_monitoring === '0'}
+                      checked={formData.monitoring_kalori === '0'}
                       onChange={handleChange}
                       className="w-4 h-4 accent-[#5dbb7d] cursor-pointer"
                     />
@@ -522,9 +521,9 @@ export const Predict = () => {
                 <label className="block font-bold text-slate-700 mb-1">Makan diluar jam makan (ngemil)</label>
                 <CustomSelect
                   options={snackingOptions}
-                  value={formData.snacking}
+                  value={formData.kat_makan_cemilan}
                   placeholder="Pilih kebiasaan ngemil..."
-                  onChange={(val) => handleCustomSelectChange('snacking', val)}
+                  onChange={(val) => handleCustomSelectChange('kat_makan_cemilan', val)}
                 />
               </div>
 
@@ -533,9 +532,9 @@ export const Predict = () => {
                 <label className="block font-bold text-slate-700 mb-1">Durasi Gadget? (jam/hari)</label>
                 <CustomSelect
                   options={screenTimeOptions}
-                  value={formData.screen_time}
+                  value={formData.durasi_penggunaan_gadget}
                   placeholder="Pilih durasi gadget..."
-                  onChange={(val) => handleCustomSelectChange('screen_time', val)}
+                  onChange={(val) => handleCustomSelectChange('durasi_penggunaan_gadget', val)}
                 />
               </div>
 
@@ -544,9 +543,9 @@ export const Predict = () => {
                 <label className="block font-bold text-slate-700 mb-1">Transportasi Sehari-hari?</label>
                 <CustomSelect
                   options={transportOptions}
-                  value={formData.transport}
+                  value={formData.jenis_transportasi}
                   placeholder="Pilih moda transportasi..."
-                  onChange={(val) => handleCustomSelectChange('transport', val)}
+                  onChange={(val) => handleCustomSelectChange('jenis_transportasi', val)}
                 />
               </div>
 

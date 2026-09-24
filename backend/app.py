@@ -19,9 +19,9 @@ scaler_scale = None
 classes = ['Rendah', 'Sedang', 'Tinggi']
 feature_order = []
 FEATURE_NAMES = [
-    'age', 'gender', 'alcohol', 'high_calorie_food', 'vegetable_consumption',
-    'meal_per_day', 'calorie_monitoring', 'smoking', 'water_intake',
-    'family_history', 'physical_activity', 'screen_time', 'snacking', 'transport'
+    'umur', 'jenis_kelamin', 'riwayat_obesitas', 'kat_makan_berkalori', 'kat_makan_sayur',
+    'jml_makan_utama', 'kat_makan_cemilan', 'kat_merokok', 'jml_konsum_air',
+    'monitoring_kalori', 'frek_aktivitas_fisik', 'durasi_penggunaan_gadget', 'kat_konsum_alkohol', 'jenis_transportasi'
 ]
 
 try:
@@ -194,28 +194,28 @@ def generate_recommendations(data, risk_level):
         recommendations.append("Pertahankan pola hidup sehat, asupan bergizi seimbang, dan rutinitas aktivitas fisik Anda saat ini.")
 
     # Rekomendasi spesifik berdasarkan input fitur
-    if data.get('physical_activity', 0) <= 1:
+    if data.get('frek_aktivitas_fisik', data.get('physical_activity', 0)) <= 1:
         recommendations.append("Tingkatkan frekuensi aktivitas fisik minimal 150 menit per minggu (misal jalan cepat atau bersepeda santai 30 menit, 5x seminggu).")
     
-    if data.get('water_intake', 2) < 2:
+    if data.get('jml_konsum_air', data.get('water_intake', 2)) < 2:
         recommendations.append("Cukupi kebutuhan hidrasi harian minimal 2-2.5 liter air putih untuk mengoptimalkan metabolisme tubuh.")
     
-    if data.get('high_calorie_food', 0) == 1:
+    if data.get('kat_makan_berkalori', data.get('high_calorie_food', 0)) == 1:
         recommendations.append("Kurangi konsumsi makanan olahan tinggi lemak jenuh, gula sederhana, dan gorengan secara bertahap.")
         
-    if data.get('vegetable_consumption', 2) <= 1:
+    if data.get('kat_makan_sayur', data.get('vegetable_consumption', 2)) <= 1:
         recommendations.append("Perbanyak porsi sayur dan buah kaya serat dalam setiap sesi makan utama untuk memberi rasa kenyang lebih lama.")
 
-    if data.get('screen_time', 1) >= 2:
+    if data.get('durasi_penggunaan_gadget', data.get('screen_time', 1)) >= 2:
         recommendations.append("Batasi penggunaan gadget di luar jam kerja/belajar dan lakukan *active break* (peregangan) setiap 45-60 menit duduk.")
 
-    if data.get('snacking', 3) <= 1:
+    if data.get('kat_makan_cemilan', data.get('snacking', 3)) <= 1:
         recommendations.append("Ganti camilan tinggi gula atau kalori tinggi dengan camilan padat nutrisi seperti buah potong atau kacang panggang tanpa garam.")
 
-    if data.get('alcohol', 3) <= 1:
+    if data.get('kat_konsum_alkohol', data.get('alcohol', 3)) <= 1:
         recommendations.append("Kurangi atau batasi konsumsi minuman beralkohol untuk menurunkan asupan kalori cair berlebih.")
 
-    if data.get('smoking', 0) == 1:
+    if data.get('kat_merokok', data.get('smoking', 0)) == 1:
         recommendations.append("Pertimbangkan program berhenti merokok karena kombinasi merokok dan risiko obesitas melipatgandakan risiko kardiovaskular.")
 
     return recommendations
@@ -237,41 +237,41 @@ def predict():
         if not req_data:
             return jsonify({"error": "Payload JSON tidak ditemukan"}), 400
 
-        # Normalisasi key mapping
-        gender = float(req_data.get('gender', req_data.get('Gender', 0)))
-        age = float(req_data.get('age', req_data.get('Age', 25)))
-        family_history = float(req_data.get('family_history', req_data.get('family_history_with_overweight', 0)))
-        high_calorie_food = float(req_data.get('high_calorie_food', req_data.get('favc', req_data.get('FAVC', 0))))
-        vegetable_consumption = float(req_data.get('vegetable_consumption', req_data.get('fcvc', req_data.get('FCVC', 2))))
-        meal_per_day = float(req_data.get('meal_per_day', req_data.get('ncp', req_data.get('NCP', 3))))
-        snacking = float(req_data.get('snacking', req_data.get('caec', req_data.get('CAEC', 1))))
-        smoking = float(req_data.get('smoking', req_data.get('smoke', req_data.get('SMOKE', 0))))
-        water_intake = float(req_data.get('water_intake', req_data.get('ch2o', req_data.get('CH2O', 2))))
-        calorie_monitoring = float(req_data.get('calorie_monitoring', req_data.get('scc', req_data.get('SCC', 0))))
-        physical_activity = float(req_data.get('physical_activity', req_data.get('faf', req_data.get('FAF', 1))))
-        screen_time = float(req_data.get('screen_time', req_data.get('tue', req_data.get('TUE', 1))))
-        alcohol = float(req_data.get('alcohol', req_data.get('calc', req_data.get('CALC', 0))))
-        transport = float(req_data.get('transport', req_data.get('mtrans', req_data.get('MTRANS', 3))))
+        # Normalisasi key mapping (Mendukung 100% Bahasa Indonesia sesuai ERD & Fallback Bahasa Inggris)
+        umur = float(req_data.get('umur', req_data.get('age', req_data.get('Age', 25))))
+        jenis_kelamin = float(req_data.get('jenis_kelamin', req_data.get('gender', req_data.get('Gender', 0))))
+        riwayat_obesitas = float(req_data.get('riwayat_obesitas', req_data.get('family_history', req_data.get('family_history_with_overweight', 0))))
+        kat_makan_berkalori = float(req_data.get('kat_makan_berkalori', req_data.get('high_calorie_food', req_data.get('favc', req_data.get('FAVC', 0)))))
+        kat_makan_sayur = float(req_data.get('kat_makan_sayur', req_data.get('vegetable_consumption', req_data.get('fcvc', req_data.get('FCVC', 2)))))
+        jml_makan_utama = float(req_data.get('jml_makan_utama', req_data.get('meal_per_day', req_data.get('ncp', req_data.get('NCP', 3)))))
+        kat_makan_cemilan = float(req_data.get('kat_makan_cemilan', req_data.get('snacking', req_data.get('caec', req_data.get('CAEC', 1)))))
+        kat_merokok = float(req_data.get('kat_merokok', req_data.get('smoking', req_data.get('smoke', req_data.get('SMOKE', 0)))))
+        jml_konsum_air = float(req_data.get('jml_konsum_air', req_data.get('water_intake', req_data.get('ch2o', req_data.get('CH2O', 2)))))
+        monitoring_kalori = float(req_data.get('monitoring_kalori', req_data.get('calorie_monitoring', req_data.get('scc', req_data.get('SCC', 0)))))
+        frek_aktivitas_fisik = float(req_data.get('frek_aktivitas_fisik', req_data.get('physical_activity', req_data.get('faf', req_data.get('FAF', 1)))))
+        durasi_penggunaan_gadget = float(req_data.get('durasi_penggunaan_gadget', req_data.get('screen_time', req_data.get('tue', req_data.get('TUE', 1)))))
+        kat_konsum_alkohol = float(req_data.get('kat_konsum_alkohol', req_data.get('alcohol', req_data.get('calc', req_data.get('CALC', 0)))))
+        jenis_transportasi = float(req_data.get('jenis_transportasi', req_data.get('transport', req_data.get('mtrans', req_data.get('MTRANS', 3)))))
 
-        # Validasi range Age
-        if age <= 0 or age > 120:
-            return jsonify({"error": "Nilai usia (Age) harus berada di rentang 1 - 120 tahun."}), 400
+        # Validasi batas umur
+        if umur <= 0 or umur > 120:
+            return jsonify({"error": "Nilai umur harus berada di rentang 1 - 120 tahun."}), 400
 
         features_dict = {
-            "age": age,
-            "gender": gender,
-            "alcohol": alcohol,
-            "high_calorie_food": high_calorie_food,
-            "vegetable_consumption": vegetable_consumption,
-            "meal_per_day": meal_per_day,
-            "calorie_monitoring": calorie_monitoring,
-            "smoking": smoking,
-            "water_intake": water_intake,
-            "family_history": family_history,
-            "physical_activity": physical_activity,
-            "screen_time": screen_time,
-            "snacking": snacking,
-            "transport": transport
+            "umur": umur,
+            "jenis_kelamin": jenis_kelamin,
+            "riwayat_obesitas": riwayat_obesitas,
+            "kat_makan_berkalori": kat_makan_berkalori,
+            "kat_makan_sayur": kat_makan_sayur,
+            "jml_makan_utama": jml_makan_utama,
+            "kat_makan_cemilan": kat_makan_cemilan,
+            "kat_merokok": kat_merokok,
+            "jml_konsum_air": jml_konsum_air,
+            "monitoring_kalori": monitoring_kalori,
+            "frek_aktivitas_fisik": frek_aktivitas_fisik,
+            "durasi_penggunaan_gadget": durasi_penggunaan_gadget,
+            "kat_konsum_alkohol": kat_konsum_alkohol,
+            "jenis_transportasi": jenis_transportasi
         }
 
         # Bentuk vektor fitur (29 dimensi: 6 numerik diskalakan + 23 one-hot)

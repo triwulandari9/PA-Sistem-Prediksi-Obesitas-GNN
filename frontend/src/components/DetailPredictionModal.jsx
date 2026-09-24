@@ -52,20 +52,20 @@ export const DetailPredictionModal = ({ isOpen, prediction, onClose }) => {
   };
 
   const featuresList = [
-    { label: 'Jenis Kelamin', value: Number(prediction.gender) === 1 ? 'Laki-laki' : 'Perempuan' },
-    { label: 'Usia', value: `${prediction.age} Tahun` },
-    { label: 'Riwayat Keluarga Obesitas', value: Number(prediction.family_history) === 1 ? 'Ya' : 'Tidak' },
-    { label: 'Makanan Tinggi Kalori', value: Number(prediction.high_calorie_food) === 1 ? 'Ya, Sering' : 'Tidak' },
-    { label: 'Konsumsi Sayuran', value: formatVeg(prediction.vegetable_consumption) },
-    { label: 'Jumlah Makan Utama', value: formatMeal(prediction.meal_per_day) },
-    { label: 'Camilan di Luar Jam Makan', value: formatSnacking(prediction.snacking) },
-    { label: 'Status Merokok', value: Number(prediction.smoking) === 1 ? 'Ya (Merokok)' : 'Tidak' },
-    { label: 'Konsumsi Air Putih', value: formatWater(prediction.water_intake) },
-    { label: 'Memantau Kalori', value: Number(prediction.calorie_monitoring) === 1 ? 'Ya' : 'Tidak' },
-    { label: 'Aktivitas Fisik', value: formatActivity(prediction.physical_activity) },
-    { label: 'Durasi Layar Gadget', value: formatScreenTime(prediction.screen_time) },
-    { label: 'Konsumsi Alkohol', value: formatAlcohol(prediction.alcohol) },
-    { label: 'Transportasi Sehari-hari', value: formatTransport(prediction.transport) },
+    { label: 'Jenis Kelamin', value: Number(prediction.jenis_kelamin ?? prediction.gender) === 1 ? 'Laki-laki' : 'Perempuan' },
+    { label: 'Usia', value: `${prediction.umur ?? prediction.age} Tahun` },
+    { label: 'Riwayat Keluarga Obesitas', value: Number(prediction.riwayat_obesitas ?? prediction.family_history) === 1 ? 'Ya' : 'Tidak' },
+    { label: 'Makanan Tinggi Kalori', value: Number(prediction.kat_makan_berkalori ?? prediction.high_calorie_food) === 1 ? 'Ya, Sering' : 'Tidak' },
+    { label: 'Konsumsi Sayuran', value: formatVeg(prediction.kat_makan_sayur ?? prediction.vegetable_consumption) },
+    { label: 'Jumlah Makan Utama', value: formatMeal(prediction.jml_makan_utama ?? prediction.meal_per_day) },
+    { label: 'Camilan di Luar Jam Makan', value: formatSnacking(prediction.kat_makan_cemilan ?? prediction.snacking) },
+    { label: 'Status Merokok', value: Number(prediction.kat_merokok ?? prediction.smoking) === 1 ? 'Ya (Merokok)' : 'Tidak' },
+    { label: 'Konsumsi Air Putih', value: formatWater(prediction.jml_konsum_air ?? prediction.water_intake) },
+    { label: 'Memantau Kalori', value: Number(prediction.monitoring_kalori ?? prediction.calorie_monitoring) === 1 ? 'Ya' : 'Tidak' },
+    { label: 'Aktivitas Fisik', value: formatActivity(prediction.frek_aktivitas_fisik ?? prediction.physical_activity) },
+    { label: 'Durasi Layar Gadget', value: formatScreenTime(prediction.durasi_penggunaan_gadget ?? prediction.screen_time) },
+    { label: 'Konsumsi Alkohol', value: formatAlcohol(prediction.kat_konsum_alkohol ?? prediction.alcohol) },
+    { label: 'Transportasi Sehari-hari', value: formatTransport(prediction.jenis_transportasi ?? prediction.transport) },
   ];
 
   return (
@@ -102,7 +102,7 @@ export const DetailPredictionModal = ({ isOpen, prediction, onClose }) => {
             <div>
               <span className="text-xs font-semibold text-slate-500 uppercase tracking-wider block mb-1">Status Prediksi AI (GraphSAGE)</span>
               <div className="flex items-center gap-3">
-                <RiskBadge risk={prediction.prediction || prediction.risk_level} size="lg" />
+                <RiskBadge risk={prediction.hasil_prediksi || prediction.risk_level || prediction.prediction} size="lg" />
               </div>
             </div>
             {prediction.probabilities && (
