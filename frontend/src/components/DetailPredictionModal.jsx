@@ -106,15 +106,15 @@ export const DetailPredictionModal = ({ isOpen, prediction, onClose }) => {
               <div className="flex gap-4 text-xs">
                 <div className="text-center p-2 rounded-lg bg-emerald-50 text-emerald-800 border border-emerald-200">
                   <p className="font-semibold">Rendah</p>
-                  <p className="text-sm font-bold">{prediction.probabilities.low ?? '-'}%</p>
+                  <p className="text-sm font-bold">{prediction.probabilities.rendah ?? prediction.probabilities.low ?? '-'}%</p>
                 </div>
                 <div className="text-center p-2 rounded-lg bg-amber-50 text-amber-800 border border-amber-200">
                   <p className="font-semibold">Sedang</p>
-                  <p className="text-sm font-bold">{prediction.probabilities.medium ?? '-'}%</p>
+                  <p className="text-sm font-bold">{prediction.probabilities.sedang ?? prediction.probabilities.medium ?? '-'}%</p>
                 </div>
                 <div className="text-center p-2 rounded-lg bg-rose-50 text-rose-800 border border-rose-200">
                   <p className="font-semibold">Tinggi</p>
-                  <p className="text-sm font-bold">{prediction.probabilities.high ?? '-'}%</p>
+                  <p className="text-sm font-bold">{prediction.probabilities.tinggi ?? prediction.probabilities.high ?? '-'}%</p>
                 </div>
               </div>
             )}

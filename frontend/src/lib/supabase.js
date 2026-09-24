@@ -62,9 +62,10 @@ const initLocalStore = () => {
         durasi_penggunaan_gadget: 2,
         kat_konsum_alkohol: 1,
         jenis_transportasi: 2,
-        prediction: 'HIGH',
+        prediction: 'Tinggi',
+        hasil_prediksi: 'Tinggi',
         risk_level: 'Tinggi',
-        probabilities: { low: 1.2, medium: 25.3, high: 73.5 },
+        probabilities: { rendah: 1.2, sedang: 25.3, tinggi: 73.5, low: 1.2, medium: 25.3, high: 73.5 },
         recommendations: [
           'Prioritaskan konsultasi berkala dengan dokter spesialis gizi.',
           'Tingkatkan aktivitas fisik rutin minimal 150 menit per minggu.',

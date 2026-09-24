@@ -590,23 +590,23 @@ export const Predict = () => {
                   <div className="grid grid-cols-3 gap-2">
                     <div className="p-2 rounded-xl bg-emerald-50/80 border border-emerald-200/60 text-center">
                       <p className="text-[11px] font-medium text-emerald-700">Rendah</p>
-                      <p className="text-sm font-bold text-emerald-800">{resultData.probabilities.low ?? 0}%</p>
+                      <p className="text-sm font-bold text-emerald-800">{resultData.probabilities.rendah ?? resultData.probabilities.low ?? 0}%</p>
                       <div className="w-full bg-emerald-200/60 h-1.5 rounded-full overflow-hidden mt-1">
-                        <div className="bg-emerald-500 h-full rounded-full transition-all duration-500" style={{ width: `${resultData.probabilities.low ?? 0}%` }} />
+                        <div className="bg-emerald-500 h-full rounded-full transition-all duration-500" style={{ width: `${resultData.probabilities.rendah ?? resultData.probabilities.low ?? 0}%` }} />
                       </div>
                     </div>
                     <div className="p-2 rounded-xl bg-amber-50/80 border border-amber-200/60 text-center">
                       <p className="text-[11px] font-medium text-amber-700">Sedang</p>
-                      <p className="text-sm font-bold text-amber-800">{resultData.probabilities.medium ?? 0}%</p>
+                      <p className="text-sm font-bold text-amber-800">{resultData.probabilities.sedang ?? resultData.probabilities.medium ?? 0}%</p>
                       <div className="w-full bg-amber-200/60 h-1.5 rounded-full overflow-hidden mt-1">
-                        <div className="bg-amber-500 h-full rounded-full transition-all duration-500" style={{ width: `${resultData.probabilities.medium ?? 0}%` }} />
+                        <div className="bg-amber-500 h-full rounded-full transition-all duration-500" style={{ width: `${resultData.probabilities.sedang ?? resultData.probabilities.medium ?? 0}%` }} />
                       </div>
                     </div>
                     <div className="p-2 rounded-xl bg-rose-50/80 border border-rose-200/60 text-center">
                       <p className="text-[11px] font-medium text-rose-700">Tinggi</p>
-                      <p className="text-sm font-bold text-rose-800">{resultData.probabilities.high ?? 0}%</p>
+                      <p className="text-sm font-bold text-rose-800">{resultData.probabilities.tinggi ?? resultData.probabilities.high ?? 0}%</p>
                       <div className="w-full bg-rose-200/60 h-1.5 rounded-full overflow-hidden mt-1">
-                        <div className="bg-rose-500 h-full rounded-full transition-all duration-500" style={{ width: `${resultData.probabilities.high ?? 0}%` }} />
+                        <div className="bg-rose-500 h-full rounded-full transition-all duration-500" style={{ width: `${resultData.probabilities.tinggi ?? resultData.probabilities.high ?? 0}%` }} />
                       </div>
                     </div>
                   </div>

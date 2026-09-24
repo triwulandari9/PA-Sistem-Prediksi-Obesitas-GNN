@@ -182,10 +182,10 @@ def numpy_gnn_predict(feature_vector):
 def generate_recommendations(data, risk_level):
     recommendations = []
 
-    if risk_level == 'HIGH':
+    if risk_level in ['Tinggi', 'HIGH']:
         recommendations.append("Prioritaskan konsultasi berkala dengan dokter spesialis gizi klinik atau nutrisionis untuk evaluasi komprehensif.")
         recommendations.append("Lakukan pemeriksaan profil metabolik dasar (gula darah puasa, HbA1c, dan profil lipid).")
-    elif risk_level == 'MEDIUM':
+    elif risk_level in ['Sedang', 'MEDIUM']:
         recommendations.append("Terapkan perbaikan pola makan dan tingkatkan aktivitas harian untuk mencegah peningkatan risiko ke kategori tinggi.")
         recommendations.append("Catat asupan harian (food diary) selama 2 minggu untuk mengenali pola makan berlebih.")
     else:
@@ -275,28 +275,24 @@ def predict():
 
         label_name = classes[pred_idx] if pred_idx < len(classes) else "Sedang"
 
-        risk_code_map = {
-            'Rendah': 'LOW',
-            'Sedang': 'MEDIUM',
-            'Tinggi': 'HIGH'
-        }
-        risk_code = risk_code_map.get(label_name, 'MEDIUM')
+        prob_rendah = float(probs[0])
+        prob_sedang = float(probs[1])
+        prob_tinggi = float(probs[2])
 
-        prob_low = float(probs[0])
-        prob_medium = float(probs[1])
-        prob_high = float(probs[2])
-
-        recommendations = generate_recommendations(features_dict, risk_code)
+        recommendations = generate_recommendations(features_dict, label_name)
 
         result_payload = {
-            "prediction": risk_code,
+            "prediction": label_name,
             "risk_level": label_name,
             "probabilities": {
-                "low": round(prob_low * 100, 2),
-                "medium": round(prob_medium * 100, 2),
-                "high": round(prob_high * 100, 2)
+                "rendah": round(prob_rendah * 100, 2),
+                "sedang": round(prob_sedang * 100, 2),
+                "tinggi": round(prob_tinggi * 100, 2),
+                "low": round(prob_rendah * 100, 2),
+                "medium": round(prob_sedang * 100, 2),
+                "high": round(prob_tinggi * 100, 2)
             },
-            "probs": [prob_low, prob_medium, prob_high],
+            "probs": [prob_rendah, prob_sedang, prob_tinggi],
             "recommendations": recommendations,
             "input_features": features_dict,
             "disclaimer": "Hasil analisis ini merupakan deteksi dini berbasis metode Graph Neural Network (GraphSAGE) dan bukan merupakan diagnosis medis resmi. Konsultasikan dengan tenaga medis profesional untuk penanganan lebih lanjut."

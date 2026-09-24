@@ -24,31 +24,35 @@ export const Result = () => {
   }
 
   const riskCode = (predictionData.prediction || '').toUpperCase();
-  const riskName = predictionData.risk_level || 'Sedang';
-  const probabilities = predictionData.probabilities || { low: 0, medium: 0, high: 0 };
+  const riskName = predictionData.risk_level || predictionData.prediction || 'Sedang';
+  const probabilities = predictionData.probabilities || { rendah: 0, sedang: 0, tinggi: 0 };
   const recommendations = predictionData.recommendations || [];
 
+  const probRendah = probabilities.rendah ?? probabilities.low ?? 0;
+  const probSedang = probabilities.sedang ?? probabilities.medium ?? 0;
+  const probTinggi = probabilities.tinggi ?? probabilities.high ?? 0;
+
   const getTheme = () => {
-    if (riskCode === 'LOW' || riskName === 'Rendah') {
+    if (riskCode === 'RENDAH' || riskCode === 'LOW' || riskName === 'Rendah') {
       return {
         bgGradient: 'from-emerald-500/10 via-emerald-500/5 to-transparent',
         borderColor: 'border-emerald-300',
         textColor: 'text-emerald-800',
         iconBg: 'bg-emerald-100 text-emerald-600',
         icon: ShieldCheck,
-        title: 'Tingkat Risiko Rendah (Low)',
+        title: 'Tingkat Risiko Rendah',
         summary: 'Pola hidup dan kebiasaan harian Anda berada pada kategori ideal dan memiliki risiko minimal terhadap obesitas.',
         badgeColor: 'bg-emerald-600 text-white'
       };
     }
-    if (riskCode === 'MEDIUM' || riskName === 'Sedang') {
+    if (riskCode === 'SEDANG' || riskCode === 'MEDIUM' || riskName === 'Sedang') {
       return {
         bgGradient: 'from-amber-500/10 via-amber-500/5 to-transparent',
         borderColor: 'border-amber-300',
         textColor: 'text-amber-900',
         iconBg: 'bg-amber-100 text-amber-600',
         icon: AlertTriangle,
-        title: 'Tingkat Risiko Sedang (Waspada)',
+        title: 'Tingkat Risiko Sedang',
         summary: 'Terdapat beberapa indikator pola hidup yang memerlukan penyesuaian untuk mencegah peningkatan risiko ke tingkat yang lebih tinggi.',
         badgeColor: 'bg-amber-500 text-white'
       };
@@ -60,7 +64,7 @@ export const Result = () => {
       textColor: 'text-rose-900',
       iconBg: 'bg-rose-100 text-rose-600',
       icon: AlertOctagon,
-      title: 'Tingkat Risiko Tinggi (High)',
+      title: 'Tingkat Risiko Tinggi',
       summary: 'Kombinasi faktor gaya hidup menunjukkan risiko signifikan terhadap obesitas. Sangat dianjurkan melakukan perbaikan pola hidup dan skrining medis lanjutan.',
       badgeColor: 'bg-rose-600 text-white'
     };
@@ -109,30 +113,30 @@ export const Result = () => {
               <div className="p-3.5 rounded-2xl bg-emerald-50/70 border border-emerald-200 text-center">
                 <span className="text-[11px] font-bold text-emerald-800 uppercase block">Rendah</span>
                 <span className="text-lg sm:text-xl font-extrabold text-emerald-700 block mt-0.5">
-                  {probabilities.low}%
+                  {probRendah}%
                 </span>
                 <div className="w-full bg-emerald-200/60 rounded-full h-1.5 mt-2 overflow-hidden">
-                  <div className="bg-emerald-600 h-full rounded-full" style={{ width: `${probabilities.low}%` }}></div>
+                  <div className="bg-emerald-600 h-full rounded-full" style={{ width: `${probRendah}%` }}></div>
                 </div>
               </div>
 
               <div className="p-3.5 rounded-2xl bg-amber-50/70 border border-amber-200 text-center">
                 <span className="text-[11px] font-bold text-amber-900 uppercase block">Sedang</span>
                 <span className="text-lg sm:text-xl font-extrabold text-amber-700 block mt-0.5">
-                  {probabilities.medium}%
+                  {probSedang}%
                 </span>
                 <div className="w-full bg-amber-200/60 rounded-full h-1.5 mt-2 overflow-hidden">
-                  <div className="bg-amber-500 h-full rounded-full" style={{ width: `${probabilities.medium}%` }}></div>
+                  <div className="bg-amber-500 h-full rounded-full" style={{ width: `${probSedang}%` }}></div>
                 </div>
               </div>
 
               <div className="p-3.5 rounded-2xl bg-rose-50/70 border border-rose-200 text-center">
                 <span className="text-[11px] font-bold text-rose-800 uppercase block">Tinggi</span>
                 <span className="text-lg sm:text-xl font-extrabold text-rose-700 block mt-0.5">
-                  {probabilities.high}%
+                  {probTinggi}%
                 </span>
                 <div className="w-full bg-rose-200/60 rounded-full h-1.5 mt-2 overflow-hidden">
-                  <div className="bg-rose-600 h-full rounded-full" style={{ width: `${probabilities.high}%` }}></div>
+                  <div className="bg-rose-600 h-full rounded-full" style={{ width: `${probTinggi}%` }}></div>
                 </div>
               </div>
 
