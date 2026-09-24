@@ -62,6 +62,24 @@ def numpy_sage_layer(x, conv_name, bn_name=None, use_elu=True):
         
     return out
 
+def clean_val(val):
+    """
+    Normalisasi nilai input string, integer, float (misal 1.0 -> '1') agar
+    pencocokan kategori one-hot akurat tanpa terganggu representasi float.
+    """
+    if val is None:
+        return ""
+    if isinstance(val, (int, float)):
+        try:
+            if int(val) == val:
+                return str(int(val))
+        except (ValueError, OverflowError):
+            pass
+    s = str(val).strip()
+    if s.endswith('.0'):
+        s = s[:-2]
+    return s
+
 def transform_to_model_features(raw_input):
     """
     Transforms the 14 raw user input features into the exact 29-dimensional
@@ -82,60 +100,58 @@ def transform_to_model_features(raw_input):
 
     # 2. Categorical mapping
     # Gender
-    g_val = raw_input.get('gender', raw_input.get('jenis_kelamin', 0))
-    if str(g_val).lower() in ['1', 'male', 'laki-laki', 'pria']:
+    g_val = clean_val(raw_input.get('gender', raw_input.get('jenis_kelamin', 0))).lower()
+    if g_val in ['1', 'male', 'laki-laki', 'pria']:
         gender_cat = 'Male'
     else:
         gender_cat = 'Female'
 
     # Alcohol: 3/no, 2/Sometimes, 1/Frequently, 0/Always
-    alc_val = raw_input.get('alcohol', raw_input.get('kat_konsum_alkohol', 3))
+    alc_val = clean_val(raw_input.get('alcohol', raw_input.get('kat_konsum_alkohol', 3))).lower()
     alc_map = {'0': 'Always', '1': 'Frequently', '2': 'Sometimes', '3': 'no'}
-    alc_str = str(alc_val).strip()
-    if alc_str in alc_map:
-        alc_cat = alc_map[alc_str]
-    elif alc_str.lower() in ['always', 'selalu']:
+    if alc_val in alc_map:
+        alc_cat = alc_map[alc_val]
+    elif alc_val in ['always', 'selalu']:
         alc_cat = 'Always'
-    elif alc_str.lower() in ['frequently', 'sering']:
+    elif alc_val in ['frequently', 'sering']:
         alc_cat = 'Frequently'
-    elif alc_str.lower() in ['sometimes', 'kadang-kadang', 'kadang']:
+    elif alc_val in ['sometimes', 'kadang-kadang', 'kadang']:
         alc_cat = 'Sometimes'
     else:
         alc_cat = 'no'
 
     # High calorie food: 0/no, 1/yes
-    favc_val = raw_input.get('high_calorie_food', raw_input.get('kat_makan_berkalori', 0))
-    favc_cat = 'yes' if str(favc_val).lower() in ['1', 'yes', 'ya', 'true'] else 'no'
+    favc_val = clean_val(raw_input.get('high_calorie_food', raw_input.get('kat_makan_berkalori', 0))).lower()
+    favc_cat = 'yes' if favc_val in ['1', 'yes', 'ya', 'true'] else 'no'
 
     # Calorie monitoring: 0/no, 1/yes
-    scc_val = raw_input.get('calorie_monitoring', raw_input.get('monitoring_kalori', 0))
-    scc_cat = 'yes' if str(scc_val).lower() in ['1', 'yes', 'ya', 'true'] else 'no'
+    scc_val = clean_val(raw_input.get('calorie_monitoring', raw_input.get('monitoring_kalori', 0))).lower()
+    scc_cat = 'yes' if scc_val in ['1', 'yes', 'ya', 'true'] else 'no'
 
     # Smoking: 0/no, 1/yes
-    smoke_val = raw_input.get('smoking', raw_input.get('kat_merokok', 0))
-    smoke_cat = 'yes' if str(smoke_val).lower() in ['1', 'yes', 'ya', 'true'] else 'no'
+    smoke_val = clean_val(raw_input.get('smoking', raw_input.get('kat_merokok', 0))).lower()
+    smoke_cat = 'yes' if smoke_val in ['1', 'yes', 'ya', 'true'] else 'no'
 
     # Family history: 0/no, 1/yes
-    fh_val = raw_input.get('family_history', raw_input.get('riwayat_obesitas', 0))
-    fh_cat = 'yes' if str(fh_val).lower() in ['1', 'yes', 'ya', 'true'] else 'no'
+    fh_val = clean_val(raw_input.get('family_history', raw_input.get('riwayat_obesitas', 0))).lower()
+    fh_cat = 'yes' if fh_val in ['1', 'yes', 'ya', 'true'] else 'no'
 
     # Snacking: 3/no, 2/Sometimes, 1/Frequently, 0/Always
-    snack_val = raw_input.get('snacking', raw_input.get('kat_makan_cemilan', 2))
+    snack_val = clean_val(raw_input.get('snacking', raw_input.get('kat_makan_cemilan', 2))).lower()
     snack_map = {'0': 'Always', '1': 'Frequently', '2': 'Sometimes', '3': 'no'}
-    snack_str = str(snack_val).strip()
-    if snack_str in snack_map:
-        snack_cat = snack_map[snack_str]
-    elif snack_str.lower() in ['always', 'selalu']:
+    if snack_val in snack_map:
+        snack_cat = snack_map[snack_val]
+    elif snack_val in ['always', 'selalu']:
         snack_cat = 'Always'
-    elif snack_str.lower() in ['frequently', 'sering']:
+    elif snack_val in ['frequently', 'sering']:
         snack_cat = 'Frequently'
-    elif snack_str.lower() in ['sometimes', 'kadang-kadang', 'kadang']:
+    elif snack_val in ['sometimes', 'kadang-kadang', 'kadang']:
         snack_cat = 'Sometimes'
     else:
         snack_cat = 'no'
 
     # Transport: 0/Automobile, 1/Bike, 2/Motorbike, 3/Public_Transportation, 4/Walking
-    trans_val = raw_input.get('transport', raw_input.get('jenis_transportasi', 3))
+    trans_val = clean_val(raw_input.get('transport', raw_input.get('jenis_transportasi', 3))).lower()
     trans_map = {
         '0': 'Automobile', '1': 'Bike', '2': 'Motorbike', '3': 'Public_Transportation', '4': 'Walking',
         'automobile': 'Automobile', 'bike': 'Bike', 'motorbike': 'Motorbike', 
@@ -143,8 +159,7 @@ def transform_to_model_features(raw_input):
         'mobil': 'Automobile', 'sepeda': 'Bike', 'motor': 'Motorbike', 'sepeda motor': 'Motorbike',
         'umum': 'Public_Transportation', 'transportasi umum': 'Public_Transportation', 'jalan kaki': 'Walking'
     }
-    trans_str = str(trans_val).strip().lower()
-    trans_cat = trans_map.get(trans_str, 'Public_Transportation')
+    trans_cat = trans_map.get(trans_val, 'Public_Transportation')
 
     # Construct the vector according to feature_order
     vec = np.zeros(len(feature_order), dtype=np.float32)
