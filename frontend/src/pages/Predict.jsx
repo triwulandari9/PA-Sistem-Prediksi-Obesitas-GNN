@@ -547,65 +547,89 @@ export const Predict = () => {
       </div>
 
       {showResultModal && resultData && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-900/60 backdrop-blur-sm fade-in">
-          <div className="w-full max-w-lg bg-white rounded-3xl shadow-2xl overflow-hidden border border-slate-100 transform transition-all animate-in">
+        <div 
+          className="fixed inset-0 z-50 flex items-center justify-center p-3 sm:p-6 bg-slate-900/60 backdrop-blur-sm fade-in"
+          onClick={(e) => {
+            if (e.target === e.currentTarget) handleCloseModal();
+          }}
+        >
+          <div className="w-full max-w-3xl max-h-[92vh] bg-white rounded-3xl shadow-2xl overflow-hidden border border-slate-100 flex flex-col transform transition-all animate-in">
 
-            <div className={`${modalTheme.headerBg} px-6 py-4 text-white flex items-center justify-between font-bold text-sm shadow-sm`}>
-              <span className="tracking-wide">Hasil Analisis Risiko Obesitas</span>
+            {/* Header Modal Tetap di Atas */}
+            <div className={`${modalTheme.headerBg} px-6 py-3.5 text-white flex items-center justify-between font-bold text-sm shadow-sm flex-shrink-0`}>
+              <span className="tracking-wide flex items-center gap-2">
+                <span>Hasil Analisis Risiko Obesitas (GNN)</span>
+              </span>
               <button
                 type="button"
                 onClick={handleCloseModal}
-                className="w-7 h-7 rounded-full bg-white/20 hover:bg-white/40 flex items-center justify-center text-white transition-colors cursor-pointer"
-                title="Tutup Modal"
+                className="w-8 h-8 rounded-full bg-white/20 hover:bg-white/40 active:scale-95 flex items-center justify-center text-white transition-all cursor-pointer"
+                title="Tutup Modal (Esc)"
               >
                 <X className="w-4 h-4" />
               </button>
             </div>
 
-            <div className="p-6 sm:p-7 space-y-4">
+            {/* Konten Modal Fleksibel & Scrollable jika Perlu */}
+            <div className="p-5 sm:p-7 space-y-4 overflow-y-auto flex-1">
 
-              <div className="flex items-center space-x-3.5">
-                <div className="text-4xl flex-shrink-0 p-2.5 rounded-2xl bg-slate-50 border border-slate-100 shadow-sm">
-                  {modalTheme.icon}
+              {/* Status Header */}
+              <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 p-4 rounded-2xl bg-slate-50 border border-slate-100">
+                <div className="flex items-center space-x-3.5">
+                  <div className="text-3xl sm:text-4xl flex-shrink-0 p-2.5 rounded-2xl bg-white border border-slate-200/70 shadow-sm">
+                    {modalTheme.icon}
+                  </div>
+                  <div>
+                    <h2 className="text-lg sm:text-xl font-extrabold text-slate-900 leading-tight">
+                      {modalTheme.title}
+                    </h2>
+                    <p className="text-xs font-bold text-slate-500 mt-0.5">
+                      Kategori Status: <span style={{ color: modalTheme.color }}>{modalTheme.label}</span>
+                    </p>
+                  </div>
                 </div>
-                <div>
-                  <h2 className="text-lg sm:text-xl font-extrabold text-slate-900 leading-tight">
-                    {modalTheme.title}
-                  </h2>
-                  <p className="text-xs font-bold text-slate-500 mt-0.5">
-                    Kategori Status: <span style={{ color: modalTheme.color }}>{modalTheme.label}</span>
-                  </p>
+
+                <div className="text-right sm:border-l sm:border-slate-200 sm:pl-4">
+                  <span className="text-[11px] font-semibold text-slate-400 block uppercase tracking-wider">Hasil Klasifikasi</span>
+                  <span 
+                    className="inline-block px-3 py-1 rounded-full text-xs font-extrabold text-white mt-1 shadow-sm"
+                    style={{ backgroundColor: modalTheme.color }}
+                  >
+                    {resultData.risk_level || resultData.prediction}
+                  </span>
                 </div>
               </div>
 
+              {/* Deskripsi Kesimpulan */}
               <div className="p-3.5 rounded-2xl bg-slate-50/80 border border-slate-100 text-slate-600 text-xs sm:text-sm leading-relaxed text-justify">
                 {modalTheme.text}
               </div>
 
+              {/* Distribusi Probabilitas 3 Kolom Lebar */}
               {resultData.probabilities && (
-                <div className="p-3.5 bg-slate-50/60 rounded-2xl border border-slate-100 space-y-2">
+                <div className="p-4 bg-slate-50/70 rounded-2xl border border-slate-100 space-y-2">
                   <div className="flex items-center justify-between text-xs font-bold text-slate-700">
-                    <span>Tingkat Kepastian Model GraphSAGE</span>
+                    <span>Tingkat Kepastian Model GraphSAGE (Softmax Output)</span>
                   </div>
-                  <div className="grid grid-cols-3 gap-2">
-                    <div className="p-2 rounded-xl bg-emerald-50/80 border border-emerald-200/60 text-center">
-                      <p className="text-[11px] font-medium text-emerald-700">Rendah</p>
-                      <p className="text-sm font-bold text-emerald-800">{resultData.probabilities.rendah ?? resultData.probabilities.low ?? 0}%</p>
-                      <div className="w-full bg-emerald-200/60 h-1.5 rounded-full overflow-hidden mt-1">
+                  <div className="grid grid-cols-3 gap-3">
+                    <div className="p-2.5 rounded-xl bg-emerald-50/80 border border-emerald-200/60 text-center">
+                      <p className="text-[11px] font-bold text-emerald-800 uppercase">Rendah</p>
+                      <p className="text-base font-extrabold text-emerald-700 mt-0.5">{resultData.probabilities.rendah ?? resultData.probabilities.low ?? 0}%</p>
+                      <div className="w-full bg-emerald-200/60 h-1.5 rounded-full overflow-hidden mt-1.5">
                         <div className="bg-emerald-500 h-full rounded-full transition-all duration-500" style={{ width: `${resultData.probabilities.rendah ?? resultData.probabilities.low ?? 0}%` }} />
                       </div>
                     </div>
-                    <div className="p-2 rounded-xl bg-amber-50/80 border border-amber-200/60 text-center">
-                      <p className="text-[11px] font-medium text-amber-700">Sedang</p>
-                      <p className="text-sm font-bold text-amber-800">{resultData.probabilities.sedang ?? resultData.probabilities.medium ?? 0}%</p>
-                      <div className="w-full bg-amber-200/60 h-1.5 rounded-full overflow-hidden mt-1">
+                    <div className="p-2.5 rounded-xl bg-amber-50/80 border border-amber-200/60 text-center">
+                      <p className="text-[11px] font-bold text-amber-900 uppercase">Sedang</p>
+                      <p className="text-base font-extrabold text-amber-700 mt-0.5">{resultData.probabilities.sedang ?? resultData.probabilities.medium ?? 0}%</p>
+                      <div className="w-full bg-amber-200/60 h-1.5 rounded-full overflow-hidden mt-1.5">
                         <div className="bg-amber-500 h-full rounded-full transition-all duration-500" style={{ width: `${resultData.probabilities.sedang ?? resultData.probabilities.medium ?? 0}%` }} />
                       </div>
                     </div>
-                    <div className="p-2 rounded-xl bg-rose-50/80 border border-rose-200/60 text-center">
-                      <p className="text-[11px] font-medium text-rose-700">Tinggi</p>
-                      <p className="text-sm font-bold text-rose-800">{resultData.probabilities.tinggi ?? resultData.probabilities.high ?? 0}%</p>
-                      <div className="w-full bg-rose-200/60 h-1.5 rounded-full overflow-hidden mt-1">
+                    <div className="p-2.5 rounded-xl bg-rose-50/80 border border-rose-200/60 text-center">
+                      <p className="text-[11px] font-bold text-rose-900 uppercase">Tinggi</p>
+                      <p className="text-base font-extrabold text-rose-700 mt-0.5">{resultData.probabilities.tinggi ?? resultData.probabilities.high ?? 0}%</p>
+                      <div className="w-full bg-rose-200/60 h-1.5 rounded-full overflow-hidden mt-1.5">
                         <div className="bg-rose-500 h-full rounded-full transition-all duration-500" style={{ width: `${resultData.probabilities.tinggi ?? resultData.probabilities.high ?? 0}%` }} />
                       </div>
                     </div>
@@ -613,30 +637,38 @@ export const Predict = () => {
                 </div>
               )}
 
+              {/* Rekomendasi Pola Hidup: Grid 2 Kolom Melebar & Rapi */}
               {resultData.recommendations && resultData.recommendations.length > 0 && (
-                <div className="p-3.5 bg-emerald-50/60 rounded-2xl border border-emerald-100 space-y-1.5">
+                <div className="p-4 bg-emerald-50/50 rounded-2xl border border-emerald-100/90 space-y-2.5">
                   <p className="text-xs font-bold text-emerald-900 flex items-center gap-1.5">
                     <CheckCircle2 className="w-4 h-4 text-emerald-600 flex-shrink-0" />
                     Saran & Rekomendasi Pola Hidup:
                   </p>
-                  <ul className="text-xs text-slate-700 space-y-1 pl-5 list-disc marker:text-emerald-500">
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-2 text-xs text-slate-700">
                     {resultData.recommendations.map((rec, i) => (
-                      <li key={i}>{rec}</li>
+                      <div key={i} className="flex items-start gap-2 p-2.5 rounded-xl bg-white/90 border border-emerald-100 shadow-xs">
+                        <span className="w-1.5 h-1.5 rounded-full bg-emerald-500 flex-shrink-0 mt-1.5"></span>
+                        <span className="leading-snug">{rec}</span>
+                      </div>
                     ))}
-                  </ul>
+                  </div>
                 </div>
               )}
 
-              <div className="pt-2 flex justify-center">
-                <button
-                  type="button"
-                  onClick={handleCloseModal}
-                  className="px-10 py-2.5 rounded-full bg-slate-800 hover:bg-slate-900 text-white font-bold text-xs shadow-md transition-all cursor-pointer"
-                >
-                  Selesai & Tutup
-                </button>
-              </div>
+            </div>
 
+            {/* Footer Modal Tetap di Bawah */}
+            <div className="p-4 bg-slate-50 border-t border-slate-100 flex items-center justify-between flex-shrink-0">
+              <p className="text-[11px] text-slate-500 italic hidden sm:block">
+                Hasil tersimpan otomatis ke riwayat Anda
+              </p>
+              <button
+                type="button"
+                onClick={handleCloseModal}
+                className="w-full sm:w-auto px-8 py-2.5 rounded-full bg-slate-900 hover:bg-slate-800 text-white font-bold text-xs shadow-md transition-all cursor-pointer ml-auto"
+              >
+                Tutup & Selesai
+              </button>
             </div>
 
           </div>
