@@ -2,7 +2,7 @@ import React, { useState } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
 import { Logo } from '../components/Logo';
-import { AlertCircle } from 'lucide-react';
+import { AlertCircle, Eye, EyeOff } from 'lucide-react';
 import bgImage from '../assets/bg.png';
 
 export const Register = () => {
@@ -20,6 +20,8 @@ export const Register = () => {
     password: '',
     confirmPassword: ''
   });
+  const [showPassword, setShowPassword] = useState(false);
+  const [showConfirmPassword, setShowConfirmPassword] = useState(false);
   const [error, setError] = useState('');
   const [loading, setLoading] = useState(false);
 
@@ -102,37 +104,65 @@ export const Register = () => {
             <label className="block text-xs font-semibold text-slate-700 mb-1.5">
               Kata Sandi
             </label>
-            <input
-              type="password"
-              name="password"
-              required
-              value={formData.password}
-              onChange={handleChange}
-              placeholder=""
-              className="w-full px-4 py-2.5 rounded-lg border border-slate-200 focus:outline-none focus:ring-2 focus:ring-emerald-500 bg-white text-sm transition-all shadow-inner"
-            />
+            <div className="relative">
+              <input
+                type={showPassword ? 'text' : 'password'}
+                name="password"
+                required
+                value={formData.password}
+                onChange={handleChange}
+                placeholder=""
+                className="w-full px-4 pr-10 py-2.5 rounded-lg border border-slate-200 focus:outline-none focus:ring-2 focus:ring-[#5dbb7d] bg-white text-sm transition-all shadow-inner"
+              />
+              <button
+                type="button"
+                onClick={() => setShowPassword(!showPassword)}
+                className="absolute right-3 top-1/2 -translate-y-1/2 text-slate-400 hover:text-slate-600 focus:outline-none p-1"
+                title={showPassword ? 'Sembunyikan sandi' : 'Lihat sandi'}
+              >
+                {showPassword ? (
+                  <EyeOff className="w-4 h-4 text-[#5dbb7d]" />
+                ) : (
+                  <Eye className="w-4 h-4 text-slate-400" />
+                )}
+              </button>
+            </div>
           </div>
 
           <div>
             <label className="block text-xs font-semibold text-slate-700 mb-1.5">
               Konfirmasi Kata Sandi
             </label>
-            <input
-              type="password"
-              name="confirmPassword"
-              required
-              value={formData.confirmPassword}
-              onChange={handleChange}
-              placeholder=""
-              className="w-full px-4 py-2.5 rounded-lg border border-slate-200 focus:outline-none focus:ring-2 focus:ring-emerald-500 bg-white text-sm transition-all shadow-inner"
-            />
+            <div className="relative">
+              <input
+                type={showConfirmPassword ? 'text' : 'password'}
+                name="confirmPassword"
+                required
+                value={formData.confirmPassword}
+                onChange={handleChange}
+                placeholder=""
+                className="w-full px-4 pr-10 py-2.5 rounded-lg border border-slate-200 focus:outline-none focus:ring-2 focus:ring-[#5dbb7d] bg-white text-sm transition-all shadow-inner"
+              />
+              <button
+                type="button"
+                onClick={() => setShowConfirmPassword(!showConfirmPassword)}
+                className="absolute right-3 top-1/2 -translate-y-1/2 text-slate-400 hover:text-slate-600 focus:outline-none p-1"
+                title={showConfirmPassword ? 'Sembunyikan sandi' : 'Lihat sandi'}
+              >
+                {showConfirmPassword ? (
+                  <EyeOff className="w-4 h-4 text-[#5dbb7d]" />
+                ) : (
+                  <Eye className="w-4 h-4 text-slate-400" />
+                )}
+              </button>
+            </div>
           </div>
 
           <div className="pt-3 text-center">
             <button
               type="submit"
               disabled={loading}
-              className="w-40 py-2.5 px-6 rounded-full bg-[#5dbb7d] hover:bg-[#4eaa6d] text-white font-bold text-sm shadow-md transition-all disabled:opacity-50"
+              className="w-40 py-2.5 px-6 rounded-full bg-[#5dbb7d] hover:bg-[#4eaa6d] text-white font-bold text-sm shadow-md transition-all disabled:opacity-50 cursor-pointer"
             >
               {loading ? 'Memproses...' : 'Daftar'}
             </button>
