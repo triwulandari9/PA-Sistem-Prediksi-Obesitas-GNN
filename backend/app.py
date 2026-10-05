@@ -77,12 +77,12 @@ def clean_val(val):
 
 def transform_to_model_features(raw_input):
     """
-    Transforms the 14 raw user input features into the exact 29-dimensional
-    vector expected by the trained GraphSAGE model:
-    - 6 numeric features scaled with RobustScaler
-    - 23 one-hot categorical features
+    Transforms the 14 raw user input features into the exact 18-dimensional
+    vector expected by the newly trained GraphSAGE model:
+    - 8 numerical & ordinal features scaled with RobustScaler
+    - 5 binary features (0 or 1)
+    - 5 one-hot transport features (0 or 1)
     """
-
     age = float(raw_input.get('age', raw_input.get('umur', 25)))
     veg = float(raw_input.get('vegetable_consumption', raw_input.get('kat_makan_sayur', 2)))
     meal = float(raw_input.get('meal_per_day', raw_input.get('jml_makan_utama', 3)))
@@ -90,52 +90,44 @@ def transform_to_model_features(raw_input):
     act = float(raw_input.get('physical_activity', raw_input.get('frek_aktivitas_fisik', 1)))
     screen = float(raw_input.get('screen_time', raw_input.get('durasi_penggunaan_gadget', 1)))
 
-    raw_num = np.array([age, veg, meal, water, act, screen], dtype=np.float32)
+    alc_val = clean_val(raw_input.get('alcohol', raw_input.get('kat_konsum_alkohol', 3))).lower()
+    alc_map = {
+        '0': 3.0, '1': 2.0, '2': 1.0, '3': 0.0,
+        'always': 3.0, 'selalu': 3.0,
+        'frequently': 2.0, 'sering': 2.0,
+        'sometimes': 1.0, 'kadang': 1.0, 'kadang-kadang': 1.0,
+        'no': 0.0, 'tidak': 0.0, 'tidak pernah': 0.0
+    }
+    alc_num = alc_map.get(alc_val, 0.0)
+
+    snack_val = clean_val(raw_input.get('snacking', raw_input.get('kat_makan_cemilan', 2))).lower()
+    snack_map = {
+        '0': 3.0, '1': 2.0, '2': 1.0, '3': 0.0,
+        'always': 3.0, 'selalu': 3.0,
+        'frequently': 2.0, 'sering': 2.0,
+        'sometimes': 1.0, 'kadang': 1.0, 'kadang-kadang': 1.0,
+        'no': 0.0, 'tidak': 0.0, 'tidak pernah': 0.0
+    }
+    snack_num = snack_map.get(snack_val, 1.0)
+
+    # 8 scaled features: ['umur', 'kat_makan_sayur', 'jml_makan_utama', 'jml_konsum_air', 'frek_aktivitas_fisik', 'durasi_penggunaan_gadget', 'kat_konsum_alkohol', 'kat_makan_cemilan']
+    raw_num = np.array([age, veg, meal, water, act, screen, alc_num, snack_num], dtype=np.float32)
     scaled_num = (raw_num - scaler_center) / scaler_scale
 
     g_val = clean_val(raw_input.get('gender', raw_input.get('jenis_kelamin', 0))).lower()
-    if g_val in ['1', 'male', 'laki-laki', 'pria']:
-        gender_cat = 'Male'
-    else:
-        gender_cat = 'Female'
-
-    alc_val = clean_val(raw_input.get('alcohol', raw_input.get('kat_konsum_alkohol', 3))).lower()
-    alc_map = {'0': 'Always', '1': 'Frequently', '2': 'Sometimes', '3': 'no'}
-    if alc_val in alc_map:
-        alc_cat = alc_map[alc_val]
-    elif alc_val in ['always', 'selalu']:
-        alc_cat = 'Always'
-    elif alc_val in ['frequently', 'sering']:
-        alc_cat = 'Frequently'
-    elif alc_val in ['sometimes', 'kadang-kadang', 'kadang']:
-        alc_cat = 'Sometimes'
-    else:
-        alc_cat = 'no'
+    gender_num = 1.0 if g_val in ['1', 'male', 'laki-laki', 'pria'] else 0.0
 
     favc_val = clean_val(raw_input.get('high_calorie_food', raw_input.get('kat_makan_berkalori', 0))).lower()
-    favc_cat = 'yes' if favc_val in ['1', 'yes', 'ya', 'true'] else 'no'
+    favc_num = 1.0 if favc_val in ['1', 'yes', 'ya', 'true'] else 0.0
 
     scc_val = clean_val(raw_input.get('calorie_monitoring', raw_input.get('monitoring_kalori', 0))).lower()
-    scc_cat = 'yes' if scc_val in ['1', 'yes', 'ya', 'true'] else 'no'
+    scc_num = 1.0 if scc_val in ['1', 'yes', 'ya', 'true'] else 0.0
 
     smoke_val = clean_val(raw_input.get('smoking', raw_input.get('kat_merokok', 0))).lower()
-    smoke_cat = 'yes' if smoke_val in ['1', 'yes', 'ya', 'true'] else 'no'
+    smoke_num = 1.0 if smoke_val in ['1', 'yes', 'ya', 'true'] else 0.0
 
     fh_val = clean_val(raw_input.get('family_history', raw_input.get('riwayat_obesitas', 0))).lower()
-    fh_cat = 'yes' if fh_val in ['1', 'yes', 'ya', 'true'] else 'no'
-
-    snack_val = clean_val(raw_input.get('snacking', raw_input.get('kat_makan_cemilan', 2))).lower()
-    snack_map = {'0': 'Always', '1': 'Frequently', '2': 'Sometimes', '3': 'no'}
-    if snack_val in snack_map:
-        snack_cat = snack_map[snack_val]
-    elif snack_val in ['always', 'selalu']:
-        snack_cat = 'Always'
-    elif snack_val in ['frequently', 'sering']:
-        snack_cat = 'Frequently'
-    elif snack_val in ['sometimes', 'kadang-kadang', 'kadang']:
-        snack_cat = 'Sometimes'
-    else:
-        snack_cat = 'no'
+    fh_num = 1.0 if fh_val in ['1', 'yes', 'ya', 'true'] else 0.0
 
     trans_val = clean_val(raw_input.get('transport', raw_input.get('jenis_transportasi', 3))).lower()
     trans_map = {
@@ -147,31 +139,38 @@ def transform_to_model_features(raw_input):
     }
     trans_cat = trans_map.get(trans_val, 'Public_Transportation')
 
-    vec = np.zeros(len(feature_order), dtype=np.float32)
-    vec[:6] = scaled_num
+    feature_dict = {
+        'jenis_kelamin': gender_num,
+        'umur': scaled_num[0],
+        'riwayat_obesitas': fh_num,
+        'kat_makan_berkalori': favc_num,
+        'kat_makan_sayur': scaled_num[1],
+        'jml_makan_utama': scaled_num[2],
+        'kat_makan_cemilan': scaled_num[7],
+        'kat_merokok': smoke_num,
+        'jml_konsum_air': scaled_num[3],
+        'monitoring_kalori': scc_num,
+        'frek_aktivitas_fisik': scaled_num[4],
+        'durasi_penggunaan_gadget': scaled_num[5],
+        'kat_konsum_alkohol': scaled_num[6],
+        'jenis_transportasi_Automobile': 1.0 if trans_cat == 'Automobile' else 0.0,
+        'jenis_transportasi_Bike': 1.0 if trans_cat == 'Bike' else 0.0,
+        'jenis_transportasi_Motorbike': 1.0 if trans_cat == 'Motorbike' else 0.0,
+        'jenis_transportasi_Public_Transportation': 1.0 if trans_cat == 'Public_Transportation' else 0.0,
+        'jenis_transportasi_Walking': 1.0 if trans_cat == 'Walking' else 0.0,
+    }
 
-    active_one_hot = [
-        f'jenis_kelamin_{gender_cat}',
-        f'kat_konsum_alkohol_{alc_cat}',
-        f'kat_makan_berkalori_{favc_cat}',
-        f'monitoring_kalori_{scc_cat}',
-        f'kat_merokok_{smoke_cat}',
-        f'riwayat_obesitas_{fh_cat}',
-        f'kat_makan_cemilan_{snack_cat}',
-        f'jenis_transportasi_{trans_cat}'
-    ]
-    for col in active_one_hot:
-        if col in feature_order:
-            vec[feature_order.index(col)] = 1.0
-
+    vec = np.array([feature_dict.get(col, 0.0) for col in feature_order], dtype=np.float32)
     return vec
 
 def numpy_gnn_predict(feature_vector):
-
     x = numpy_sage_layer(feature_vector, 'conv1', 'bn1', use_elu=True)
     x = numpy_sage_layer(x, 'conv2', 'bn2', use_elu=True)
-    x = numpy_sage_layer(x, 'conv3', 'bn3', use_elu=True)
-    logits = numpy_sage_layer(x, 'conv4', bn_name=None, use_elu=False)
+    x = numpy_sage_layer(x, 'conv3', bn_name=None, use_elu=True)
+
+    W_out = weights['out.weight']
+    b_out = weights['out.bias']
+    logits = x @ W_out.T + b_out
 
     exp_logits = np.exp(logits - np.max(logits))
     probs = exp_logits / np.sum(exp_logits)
