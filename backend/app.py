@@ -1,67 +1,145 @@
 import os
 import sys
 import json
+import torch
+import joblib
 import numpy as np
 from flask import Flask, request, jsonify
 from flask_cors import CORS
+from sklearn.metrics.pairwise import cosine_similarity
+from torch_geometric.nn import SAGEConv
 
 app = Flask(__name__)
 CORS(app, resources={r"/*": {"origins": "*"}})
 
 BASE_DIR = os.path.dirname(os.path.abspath(__file__))
 
-pkg_path = os.path.join(BASE_DIR, 'gnn_package.json')
-weights = {}
-scaler_center = None
-scaler_scale = None
+# 1. Definisi Arsitektur GraphSAGE (Sesuai Notebook PA_Obesitas_GraphSAGE_PalingFIX.ipynb)
+class GraphSAGE(torch.nn.Module):
+    def __init__(self, input_dim=18, hidden_dim=224, output_dim=3, dropout=0.3):
+        super().__init__()
+        self.conv1 = SAGEConv(input_dim, hidden_dim)
+        self.conv2 = SAGEConv(hidden_dim, hidden_dim)
+        self.conv3 = SAGEConv(hidden_dim, hidden_dim // 2)
+        self.bn1 = torch.nn.BatchNorm1d(hidden_dim)
+        self.bn2 = torch.nn.BatchNorm1d(hidden_dim)
+        self.out = torch.nn.Linear(hidden_dim // 2, output_dim)
+        self.dropout = dropout
+
+    def get_embeddings(self, x, edge_index):
+        x = torch.nn.functional.elu(self.bn1(self.conv1(x, edge_index)))
+        x = torch.nn.functional.elu(self.bn2(self.conv2(x, edge_index)))
+        return torch.nn.functional.elu(self.conv3(x, edge_index))
+
+    def forward(self, x, edge_index):
+        return self.out(self.get_embeddings(x, edge_index))
+
+# Inisialisasi model dan artefak
+model = None
+scaler = None
+le = None
+training_nodes = None
 classes = ['Rendah', 'Sedang', 'Tinggi']
-feature_order = []
+K_NEIGHBORS = 7
+
 FEATURE_NAMES = [
     'umur', 'jenis_kelamin', 'riwayat_obesitas', 'kat_makan_berkalori', 'kat_makan_sayur',
     'jml_makan_utama', 'kat_makan_cemilan', 'kat_merokok', 'jml_konsum_air',
     'monitoring_kalori', 'frek_aktivitas_fisik', 'durasi_penggunaan_gadget', 'kat_konsum_alkohol', 'jenis_transportasi'
 ]
 
+kolom_numerik = [
+    'umur', 'kat_makan_sayur', 'jml_makan_utama', 'jml_konsum_air',
+    'frek_aktivitas_fisik', 'durasi_penggunaan_gadget',
+    'kat_konsum_alkohol', 'kat_makan_cemilan'
+]
+
+feature_order = [
+    'jenis_kelamin', 'umur', 'riwayat_obesitas', 'kat_makan_berkalori', 'kat_makan_sayur',
+    'jml_makan_utama', 'kat_makan_cemilan', 'kat_merokok', 'jml_konsum_air',
+    'monitoring_kalori', 'frek_aktivitas_fisik', 'durasi_penggunaan_gadget', 'kat_konsum_alkohol',
+    'jenis_transportasi_Automobile', 'jenis_transportasi_Bike', 'jenis_transportasi_Motorbike',
+    'jenis_transportasi_Public_Transportation', 'jenis_transportasi_Walking'
+]
+
 try:
-    with open(pkg_path, 'r', encoding='utf-8') as f:
-        pkg = json.load(f)
+    model_path = os.path.join(BASE_DIR, 'model_graphsage.pth')
+    scaler_path = os.path.join(BASE_DIR, 'scaler.pkl')
+    le_path = os.path.join(BASE_DIR, 'label_encoder.pkl')
+    nodes_path = os.path.join(BASE_DIR, 'training_nodes.npy')
 
-    weights = {k: np.array(v, dtype=np.float32) for k, v in pkg['weights'].items()}
-    scaler_center = np.array(pkg['scaler']['center'], dtype=np.float32)
-    scaler_scale = np.array(pkg['scaler']['scale'], dtype=np.float32)
-    classes = pkg.get('classes', classes)
-    feature_order = pkg.get('feature_order', [])
-    print(f"[*] Lightweight GNN Engine loaded successfully from {pkg_path}")
+    state_dict = torch.load(model_path, map_location='cpu')
+    model = GraphSAGE(input_dim=18, hidden_dim=224, output_dim=3)
+    model.load_state_dict(state_dict)
+    model.eval()
+
+    scaler = joblib.load(scaler_path)
+    le = joblib.load(le_path)
+    if hasattr(le, 'classes_'):
+        classes = [str(c) for c in le.classes_]
+
+    if os.path.exists(nodes_path):
+        training_nodes = np.load(nodes_path)
+    else:
+        print(f"[!] Warning: {nodes_path} not found, will load from ObesityDataSet.csv")
+        # generate on the fly if needed
+        import pandas as pd
+        df = pd.read_csv(os.path.join(BASE_DIR, 'ObesityDataSet.csv'))
+        df.rename(columns={
+            'Gender': 'jenis_kelamin', 'Age': 'umur', 'family_history_with_overweight': 'riwayat_obesitas',
+            'FAVC': 'kat_makan_berkalori', 'FCVC': 'kat_makan_sayur', 'NCP': 'jml_makan_utama',
+            'CAEC': 'kat_makan_cemilan', 'SMOKE': 'kat_merokok', 'CH2O': 'jml_konsum_air',
+            'SCC': 'monitoring_kalori', 'FAF': 'frek_aktivitas_fisik', 'TUE': 'durasi_penggunaan_gadget',
+            'CALC': 'kat_konsum_alkohol', 'MTRANS': 'jenis_transportasi', 'NObeyesdad': 'label'
+        }, inplace=True)
+        df = df.drop_duplicates()
+        df = df[df['umur'] >= 18].reset_index(drop=True)
+        df = df.drop(columns=['Height', 'Weight', 'label'])
+        map_b = {'no': 0, 'yes': 1, 'Female': 0, 'Male': 1}
+        for c in ['jenis_kelamin', 'riwayat_obesitas', 'kat_makan_berkalori', 'monitoring_kalori', 'kat_merokok']:
+            df[c] = df[c].map(map_b)
+        map_o = {'no': 0, 'Sometimes': 1, 'Frequently': 2, 'Always': 3}
+        for c in ['kat_konsum_alkohol', 'kat_makan_cemilan']:
+            df[c] = df[c].map(map_o)
+        df = pd.get_dummies(df, columns=['jenis_transportasi'], drop_first=False)
+        df[df.select_dtypes('bool').columns] = df[df.select_dtypes('bool').columns].astype(int)
+        df[kolom_numerik] = scaler.transform(df[kolom_numerik])
+        training_nodes = df.values.astype(np.float32)
+        np.save(nodes_path, training_nodes)
+
+    print(f"[*] GraphSAGE Engine loaded successfully!")
     print(f"[*] Classes: {classes}")
-    print(f"[*] Model feature dimension: {len(feature_order)}")
+    print(f"[*] Training graph nodes: {training_nodes.shape[0]} nodes, {training_nodes.shape[1]} features")
 except Exception as e:
-    print(f"[!] Error loading gnn_package.json: {e}", file=sys.stderr)
+    print(f"[!] Error initializing model: {e}", file=sys.stderr)
 
-def numpy_sage_layer(x, conv_name, bn_name=None, use_elu=True):
-    W_l = weights[f'{conv_name}.lin_l.weight']
-    W_r = weights[f'{conv_name}.lin_r.weight']
-    bias = weights[f'{conv_name}.lin_l.bias']
+def build_knn_graph(X_arr, k=7):
+    sim = cosine_similarity(X_arr)
+    np.fill_diagonal(sim, -1)
+    src, dst = [], []
+    for i in range(len(X_arr)):
+        neighbors = np.argsort(sim[i])[-k:]
+        for j in neighbors:
+            src += [i, j]
+            dst += [j, i]
+    edge_index = torch.tensor(np.unique(np.array([src, dst]), axis=1), dtype=torch.long)
+    return edge_index, sim
 
-    out = x @ (W_l.T + W_r.T) + bias
+def predict_with_graph(model_obj, X_test_arr, X_train_arr, k=7):
+    X_combined = np.vstack([X_train_arr, X_test_arr])
+    edge_index, _ = build_knn_graph(X_combined, k=k)
+    x = torch.tensor(X_combined, dtype=torch.float32)
 
-    if bn_name is not None:
-        gamma = weights[f'{bn_name}.weight']
-        beta = weights[f'{bn_name}.bias']
-        mean = weights[f'{bn_name}.running_mean']
-        var = weights[f'{bn_name}.running_var']
-        eps = 1e-5
-        out = (out - mean) / np.sqrt(var + eps) * gamma + beta
+    model_obj.eval()
+    with torch.no_grad():
+        out = model_obj(x, edge_index)
+        probs = torch.nn.functional.softmax(out, dim=1).numpy()
 
-    if use_elu:
-        out = np.where(out > 0, out, np.exp(out) - 1.0)
-
-    return out
+    n_train = len(X_train_arr)
+    preds = probs[n_train:].argmax(axis=1)
+    return preds, probs[n_train:]
 
 def clean_val(val):
-    """
-    Normalisasi nilai input string, integer, float (misal 1.0 -> '1') agar
-    pencocokan kategori one-hot akurat tanpa terganggu representasi float.
-    """
     if val is None:
         return ""
     if isinstance(val, (int, float)):
@@ -76,13 +154,6 @@ def clean_val(val):
     return s
 
 def transform_to_model_features(raw_input):
-    """
-    Transforms the 14 raw user input features into the exact 18-dimensional
-    vector expected by the newly trained GraphSAGE model:
-    - 8 numerical & ordinal features scaled with RobustScaler
-    - 5 binary features (0 or 1)
-    - 5 one-hot transport features (0 or 1)
-    """
     age = float(raw_input.get('age', raw_input.get('umur', 25)))
     veg = float(raw_input.get('vegetable_consumption', raw_input.get('kat_makan_sayur', 2)))
     meal = float(raw_input.get('meal_per_day', raw_input.get('jml_makan_utama', 3)))
@@ -111,8 +182,8 @@ def transform_to_model_features(raw_input):
     snack_num = snack_map.get(snack_val, 1.0)
 
     # 8 scaled features: ['umur', 'kat_makan_sayur', 'jml_makan_utama', 'jml_konsum_air', 'frek_aktivitas_fisik', 'durasi_penggunaan_gadget', 'kat_konsum_alkohol', 'kat_makan_cemilan']
-    raw_num = np.array([age, veg, meal, water, act, screen, alc_num, snack_num], dtype=np.float32)
-    scaled_num = (raw_num - scaler_center) / scaler_scale
+    raw_num_df = np.array([[age, veg, meal, water, act, screen, alc_num, snack_num]], dtype=np.float32)
+    scaled_num = scaler.transform(raw_num_df)[0]
 
     g_val = clean_val(raw_input.get('gender', raw_input.get('jenis_kelamin', 0))).lower()
     gender_num = 1.0 if g_val in ['1', 'male', 'laki-laki', 'pria'] else 0.0
@@ -161,22 +232,7 @@ def transform_to_model_features(raw_input):
     }
 
     vec = np.array([feature_dict.get(col, 0.0) for col in feature_order], dtype=np.float32)
-    return vec
-
-def numpy_gnn_predict(feature_vector):
-    x = numpy_sage_layer(feature_vector, 'conv1', 'bn1', use_elu=True)
-    x = numpy_sage_layer(x, 'conv2', 'bn2', use_elu=True)
-    x = numpy_sage_layer(x, 'conv3', bn_name=None, use_elu=True)
-
-    W_out = weights['out.weight']
-    b_out = weights['out.bias']
-    logits = x @ W_out.T + b_out
-
-    exp_logits = np.exp(logits - np.max(logits))
-    probs = exp_logits / np.sum(exp_logits)
-    pred_idx = int(np.argmax(probs))
-
-    return pred_idx, probs
+    return np.array([vec], dtype=np.float32)
 
 def generate_recommendations(data, risk_level):
     recommendations = []
@@ -220,8 +276,8 @@ def generate_recommendations(data, risk_level):
 def health_check():
     return jsonify({
         "status": "healthy",
-        "model_loaded": bool(weights),
-        "engine": "Lightweight NumPy GraphSAGE Engine (One-Hot + RobustScaler)",
+        "model_loaded": model is not None,
+        "engine": "Inductive GraphSAGE Engine (kNN Graph Message Passing)",
         "features": FEATURE_NAMES,
         "classes": classes
     })
@@ -268,15 +324,17 @@ def predict():
             "jenis_transportasi": jenis_transportasi
         }
 
-        feature_vector = transform_to_model_features(features_dict)
+        feature_matrix = transform_to_model_features(features_dict)
 
-        pred_idx, probs = numpy_gnn_predict(feature_vector)
+        preds, probs = predict_with_graph(model, feature_matrix, training_nodes, k=K_NEIGHBORS)
+        pred_idx = int(preds[0])
+        prob_vec = probs[0]
 
         label_name = classes[pred_idx] if pred_idx < len(classes) else "Sedang"
 
-        prob_rendah = float(probs[0])
-        prob_sedang = float(probs[1])
-        prob_tinggi = float(probs[2])
+        prob_rendah = float(prob_vec[0])
+        prob_sedang = float(prob_vec[1])
+        prob_tinggi = float(prob_vec[2])
 
         recommendations = generate_recommendations(features_dict, label_name)
 
