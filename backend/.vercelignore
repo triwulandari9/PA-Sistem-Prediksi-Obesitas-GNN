@@ -1,0 +1,6 @@
+*.ipynb
+*.csv
+*.sql
+*.md
+test_*.py
+__pycache__/
