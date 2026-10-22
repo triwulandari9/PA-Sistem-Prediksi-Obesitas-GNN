@@ -51,11 +51,11 @@ feature_order = [
     'frek_aktivitas_fisik',
     'durasi_penggunaan_gadget',
     'kat_konsum_alkohol',
-    'jenis_transportasi_Automobile',
-    'jenis_transportasi_Bike',
-    'jenis_transportasi_Motorbike',
-    'jenis_transportasi_Public_Transportation',
-    'jenis_transportasi_Walking'
+    'trans_Automobile',
+    'trans_Bike',
+    'trans_Motorbike',
+    'trans_Public_Transportation',
+    'trans_Walking'
 ]
 
 package = {
